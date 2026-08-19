@@ -248,9 +248,6 @@ sections at the end of `src/styles.css`, plus the tab bar and tooltip guards in
   majority of the screen.
 - **Landscape phones** (`max-height: 520px`) drop to a shorter, icon-only tab bar.
 
-Note: `DraftALore.apk` in the repo is a prebuilt artifact from an earlier `index.html`.
-Rebuild it (below) to ship these changes in the Android app.
-
 ---
 
 ## Rebuilding the Android APK
@@ -321,6 +318,3 @@ operations of a for-profit business. Ask via
 [github.com/Hexxis-cmd](https://github.com/Hexxis-cmd) — royalty, flat-fee, buyout and
 white-label arrangements are all on the table.
 
-Note: because it restricts commercial use, this is **source-available** rather than
-OSI-approved "open source" — GitHub will show the license as "Other", and that's expected.
-itch.io has no problem with it, and donations for the original stay yours.
