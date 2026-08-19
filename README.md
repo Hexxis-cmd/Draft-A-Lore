@@ -1,4 +1,4 @@
-[Itch.io]([[https://hexxis-cmd.itch.io/draft-a-lore]].)
+[Itch.io](https://hexxis-cmd.itch.io/draft-a-lore)
 # Draft A Lore
 
 **A single-file, offline-first writing studio and RPG adventure designer.**
