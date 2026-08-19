@@ -1,0 +1,13 @@
+# generated / transient
+node_modules/
+www/
+android/build/
+android/app/build/
+android/.gradle/
+android/.idea/
+android/local.properties
+android/capacitor-cordova-android-plugins/build/
+.gradle/
+*.keystore
+*.jks
+.DS_Store

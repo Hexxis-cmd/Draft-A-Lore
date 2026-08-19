@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Draft A Lore</string>
+    <string name="title_activity_main">Draft A Lore</string>
+    <string name="package_name">com.draftalore.app</string>
+    <string name="custom_url_scheme">com.draftalore.app</string>
+</resources>

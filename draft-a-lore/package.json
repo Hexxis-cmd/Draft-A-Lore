@@ -1,0 +1,20 @@
+{
+  "name": "draft-a-lore",
+  "version": "1.0.0",
+  "main": "adventure-tools.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "stage-mobile": "python3 build-mobile.py",
+    "sync-android": "python3 build-mobile.py && npx cap sync android",
+    "build-android-debug": "python3 build-mobile.py && npx cap sync android && cd android && ./gradlew assembleDebug"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0"
+  }
+}
