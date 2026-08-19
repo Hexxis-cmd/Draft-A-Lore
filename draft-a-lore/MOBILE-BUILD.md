@@ -13,7 +13,7 @@ is **Draft A Lore**.
 - Android SDK command-line tools, `platform-tools`, `platforms;android-35`, and
   `build-tools;35.0.0`
 
-The generated project uses Android Gradle Plugin 8.7.2 / Gradle 8.11.1, has
+The Project uses Android Gradle Plugin 8.7.2 / Gradle 8.11.1, has
 `minSdkVersion` 24, and targets/compiles Android API 35.
 
 Set the SDK and JDK environment before building:
