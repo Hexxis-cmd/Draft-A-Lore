@@ -1,4 +1,4 @@
-[README.md](https://github.com/user-attachments/files/31203999/README.md)
+[Itch.io]([https://github.com/user-attachments/files/31203999/README.md](https://hexxis-cmd.itch.io/draft-a-lore))
 # Draft A Lore
 
 **A single-file, offline-first writing studio and RPG adventure designer.**
