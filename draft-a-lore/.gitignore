@@ -1,6 +1,8 @@
 # generated / transient
 node_modules/
+dist/
 www/
+android/app/src/main/assets/public/
 android/build/
 android/app/build/
 android/.gradle/
@@ -11,3 +13,4 @@ android/capacitor-cordova-android-plugins/build/
 *.keystore
 *.jks
 .DS_Store
+__pycache__/

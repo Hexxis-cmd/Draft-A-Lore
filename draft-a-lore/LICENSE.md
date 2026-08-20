@@ -128,7 +128,7 @@ Use means anything you do with the software requiring one of your licenses.
 
 # Supplemental Terms
 
-These two terms are added by the licensor and apply in addition to the PolyForm
+These supplemental terms are added by the licensor and apply in addition to the PolyForm
 Noncommercial License 1.0.0 above.
 
 ## S1. Source Availability for Public Forks
@@ -141,8 +141,8 @@ clearly that it is a modified version of Draft A Lore, with a link to
 
 ## S2. Reserved Name and Artwork
 
-The name "Draft A Lore", the Draft A Lore logo (`logo.png`, `logo.jpg`), and all derived
-icon assets in `favicon.ico` and `icons/` are **not** licensed by these terms. They remain
+The name "Draft A Lore", the Draft A Lore logo (`assets/logo.png`, `assets/logo.jpg`), and all
+derived icon assets in `assets/favicon.ico` and `assets/icons/` are **not** licensed by these terms. They remain
 the licensor's property. You may keep them in an unmodified copy you pass along, but a
 modified or forked version distributed publicly must use its own name and its own artwork.
 

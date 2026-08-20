@@ -13,7 +13,7 @@
 /* Fluid root size: every rem-based token below scales with the viewport, so the
    same layout stays legible on a 720p phone, a 1080p laptop and a 4K monitor. */
 html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;scroll-behavior:smooth;font-size:clamp(15px,13.6px + .2vw,19px);-webkit-text-size-adjust:100%;text-size-adjust:100%}
-body{min-height:100vh;min-height:100dvh;line-height:1.6;font-family:'Georgia','Cambria','Times New Roman',serif;font-size:1rem;color:var(--c-text);background:var(--c-bg);overflow:hidden;overscroll-behavior:none}
+body{min-height:100vh;min-height:100dvh;line-height:1.6;font-family:var(--font-body,'Georgia','Cambria','Times New Roman',serif);font-size:1rem;color:var(--c-text);background:var(--c-bg);overflow:hidden;overscroll-behavior:none}
 img,picture,canvas,svg{display:block;max-width:100%;height:auto}
 input,button,textarea,select{font:inherit;color:inherit;background:none;border:none}
 button{cursor:pointer}
@@ -42,43 +42,124 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
   --radius-full:999px;
 }
 
-/* --- Theme: Dark --- */
-:root,[data-theme="dark"]{
-  --c-bg:#0F1116; --c-surface:#15181F; --c-surface-2:#1B1F28; --c-panel:#1A1D24;
+/* ============================================================
+   THEMES
+   Every colour in the app comes from one of these blocks. Component CSS only
+   ever refers to the tokens, so a new theme needs no changes anywhere else.
+
+   --p-*  raw palette values, declared once and reused by both the theme block
+          and its swatch in the Settings picker so the two cannot drift.
+   --c-brand-1/2/3  the theme's gradient identity (brand mark, primary button,
+          progress fill, active nav).
+   --c-on-accent    text drawn on top of accent and brand surfaces.
+   ============================================================ */
+:root{
+  --p-aurora-bg:#0a0814; --p-aurora-1:#6366F1; --p-aurora-2:#8B5CF6; --p-aurora-3:#EC4899;
+  --p-aurora-panel:#151028; --p-aurora-text:#E8E0F0; --p-aurora-muted:#A997C4; --p-aurora-border:#2a1f48;
+  --p-dark-bg:#0F1116; --p-dark-1:#8C6A2A; --p-dark-2:#C9A24B; --p-dark-3:#E4CE8E;
+  --p-dark-panel:#1A1D24; --p-dark-text:#E8E4D8; --p-dark-muted:#A8A294; --p-dark-border:#2A2E38;
+  --p-light-bg:#EDEAE3; --p-light-1:#7A5A16; --p-light-2:#94641C; --p-light-3:#6B5A2E;
+  --p-light-panel:#F0EDE5; --p-light-text:#2A2620; --p-light-muted:#615B4E; --p-light-border:#D5D0C5;
+  --p-fantasy-dark-bg:#0C0E0A; --p-fantasy-dark-1:#A34B4B; --p-fantasy-dark-2:#C9A544; --p-fantasy-dark-3:#7FA85E;
+  --p-fantasy-dark-panel:#15180F; --p-fantasy-dark-text:#D9D2B4; --p-fantasy-dark-muted:#A19A78; --p-fantasy-dark-border:#282E1E;
+  --p-fantasy-light-bg:#F0E6CC; --p-fantasy-light-1:#5C6B3E; --p-fantasy-light-2:#8A6A22; --p-fantasy-light-3:#8A5252;
+  --p-fantasy-light-panel:#F5EDD5; --p-fantasy-light-text:#3A2E1C; --p-fantasy-light-muted:#6B5C3E; --p-fantasy-light-border:#D8CCA0;
+  --p-nebula-bg:#05121A; --p-nebula-1:#0EA5E9; --p-nebula-2:#22D3EE; --p-nebula-3:#34D399;
+  --p-nebula-panel:#0C2030; --p-nebula-text:#DDF1F6; --p-nebula-muted:#95B7C4; --p-nebula-border:#1B3B4C;
+  --p-ember-bg:#150C0A; --p-ember-1:#D93030; --p-ember-2:#F97316; --p-ember-3:#FBBF24;
+  --p-ember-panel:#241511; --p-ember-text:#F5E3D7; --p-ember-muted:#C09C88; --p-ember-border:#40241B;
+  --p-sakura-bg:#FBEFF3; --p-sakura-1:#BE185D; --p-sakura-2:#9333EA; --p-sakura-3:#C0246E;
+  --p-sakura-panel:#FEF4F8; --p-sakura-text:#33202B; --p-sakura-muted:#6E4E5D; --p-sakura-border:#E7CBD7;
+  --p-moss-bg:#EDF1E7; --p-moss-1:#3F6B0C; --p-moss-2:#4F6E12; --p-moss-3:#0F766E;
+  --p-moss-panel:#F2F5EC; --p-moss-text:#222B1F; --p-moss-muted:#535F4B; --p-moss-border:#CBD6C0;
+  --p-slate-bg:#0B0F14; --p-slate-1:#2563EB; --p-slate-2:#38BDF8; --p-slate-3:#818CF8;
+  --p-slate-panel:#151C24; --p-slate-text:#E9EFF6; --p-slate-muted:#A3B1C2; --p-slate-border:#26303C;
+}
+
+/* --- Theme: Midnight Ink --- */
+:root,:root[data-theme="dark"]{
+  --c-bg:var(--p-dark-bg); --c-surface:#15181F; --c-surface-2:#1B1F28; --c-panel:#1A1D24;
   --c-border:#2A2E38; --c-divider:#232730;
-  --c-text:#E8E4D8; --c-text-muted:#9A958A; --c-text-faint:#6B6860;
-  --c-accent:#C9A24B; --c-accent-hover:#D9B25B; --c-accent-soft:rgba(201,162,75,.12);
-  --c-success:#6B9F4E; --c-danger:#C45B5B; --c-warning:#D4923B; --c-info:#5B8AC4;
-  --shadow-sm:0 1px 3px rgba(0,0,0,.3);
-  --shadow-md:0 4px 12px rgba(0,0,0,.4);
-  --shadow-lg:0 12px 32px rgba(0,0,0,.5);
+  --c-text:#E8E4D8; --c-text-muted:#A8A294; --c-text-faint:#7C776C;
+  --c-accent:#C9A24B; --c-accent-hover:#DCB661; --c-accent-soft:rgba(201,162,75,.12);
+  --c-on-accent:#14100A;
+  --c-success:#6B9F4E; --c-danger:#D26F6F; --c-warning:#D4923B; --c-info:#5B8AC4;
+  --c-brand-1:var(--p-dark-1); --c-brand-2:var(--p-dark-2); --c-brand-3:var(--p-dark-3);
+  --c-btn-1:#C9A24B; --c-btn-2:#DCBB6E; --c-btn-3:#EED9A6;
+  --c-brand-wash:rgba(140,106,42,.10);
+  --c-brand-glow:rgba(201,162,75,.22);
+  --c-brand-edge:rgba(201,162,75,.16);
+  --c-brand-edge-strong:rgba(201,162,75,.30);
+  --c-selection:rgba(201,162,75,.25);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.4);
+  --shadow-md:0 4px 12px rgba(0,0,0,.5);
+  --shadow-lg:0 12px 32px rgba(0,0,0,.6);
   --font-display:'Georgia','Cambria',serif;
   --font-body:'Georgia','Cambria','Times New Roman',serif;
   --font-mono:'Courier New',monospace;
 }
 
-/* --- Theme: Light --- */
-[data-theme="light"]{
-  --c-bg:#EDEAE3; --c-surface:#F5F2EB; --c-surface-2:#EFEBE2; --c-panel:#F0EDE5;
+/* --- Theme: Aurora --- */
+:root[data-theme="aurora"]{
+  --c-bg:var(--p-aurora-bg); --c-surface:#110d20; --c-surface-2:#181230; --c-panel:#151028;
+  --c-border:#2a1f48; --c-divider:#221838;
+  --c-text:#E8E0F0; --c-text-muted:#A997C4; --c-text-faint:#7B6A99;
+  --c-accent:#A855F7; --c-accent-hover:#C084FC; --c-accent-soft:rgba(168,85,247,.12);
+  --c-on-accent:#F5F0FF;
+  --c-success:#6B9F4E; --c-danger:#E056A0; --c-warning:#D4923B; --c-info:#8B93F8;
+  --c-brand-1:var(--p-aurora-1); --c-brand-2:var(--p-aurora-2); --c-brand-3:var(--p-aurora-3);
+  --c-btn-1:#4F46E5; --c-btn-2:#7E22CE; --c-btn-3:#BE185D;
+  --c-brand-wash:rgba(99,102,241,.10);
+  --c-brand-glow:rgba(139,92,246,.22);
+  --c-brand-edge:rgba(139,92,246,.16);
+  --c-brand-edge-strong:rgba(139,92,246,.30);
+  --c-selection:rgba(168,85,247,.25);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.4);
+  --shadow-md:0 4px 12px rgba(0,0,0,.5);
+  --shadow-lg:0 12px 32px rgba(0,0,0,.6);
+  --font-display:'Cinzel','Georgia','Cambria',serif;
+  --font-body:'Georgia','Cambria','Times New Roman',serif;
+  --font-mono:'Courier New',monospace;
+}
+
+/* --- Theme: Daylight --- */
+:root[data-theme="light"]{
+  --c-bg:var(--p-light-bg); --c-surface:#F5F2EB; --c-surface-2:#EFEBE2; --c-panel:#F0EDE5;
   --c-border:#D5D0C5; --c-divider:#E0DCD3;
-  --c-text:#2A2620; --c-text-muted:#7A7568; --c-text-faint:#A8A296;
-  --c-accent:#8E6B1E; --c-accent-hover:#9E7B2E; --c-accent-soft:rgba(142,107,30,.10);
-  --c-success:#4F7D3E; --c-danger:#A8444A; --c-warning:#B8732E; --c-info:#3E6BA0;
-  --shadow-sm:0 1px 3px rgba(60,50,30,.08);
-  --shadow-md:0 4px 12px rgba(60,50,30,.10);
-  --shadow-lg:0 12px 32px rgba(60,50,30,.15);
+  --c-text:#2A2620; --c-text-muted:#615B4E; --c-text-faint:#8B8478;
+  --c-accent:#7A5A16; --c-accent-hover:#8E6B1E; --c-accent-soft:rgba(122,90,22,.10);
+  --c-on-accent:#FFFBF0;
+  --c-success:#41692F; --c-danger:#973B41; --c-warning:#8F5A1E; --c-info:#2F5787;
+  --c-brand-1:var(--p-light-1); --c-brand-2:var(--p-light-2); --c-brand-3:var(--p-light-3);
+  --c-btn-1:#5A4110; --c-btn-2:#7A5A16; --c-btn-3:#8E6B1E;
+  --c-brand-wash:rgba(122,90,22,.14);
+  --c-brand-glow:rgba(148,100,28,.18);
+  --c-brand-edge:rgba(148,100,28,.22);
+  --c-brand-edge-strong:rgba(148,100,28,.38);
+  --c-selection:rgba(122,90,22,.20);
+  --shadow-sm:0 1px 3px rgba(42,38,32,.08);
+  --shadow-md:0 4px 12px rgba(42,38,32,.12);
+  --shadow-lg:0 12px 32px rgba(42,38,32,.18);
   --font-display:'Georgia','Cambria',serif;
   --font-body:'Georgia','Cambria','Times New Roman',serif;
   --font-mono:'Courier New',monospace;
 }
 
-/* --- Theme: Fantasy Dark --- */
-[data-theme="fantasy-dark"]{
-  --c-bg:#0C0E0A; --c-surface:#12150F; --c-surface-2:#171B13; --c-panel:#15180F;
-  --c-border:#252A1C; --c-divider:#1E2218;
-  --c-text:#D4CDB0; --c-text-muted:#8A8466; --c-text-faint:#5E5A48;
-  --c-accent:#A8821E; --c-accent-hover:#B8922E; --c-accent-soft:rgba(168,130,30,.12);
-  --c-success:#5E8040; --c-danger:#9E4040; --c-warning:#C07830; --c-info:#4E7080;
+/* --- Theme: Emberhold --- */
+:root[data-theme="fantasy-dark"]{
+  --c-bg:var(--p-fantasy-dark-bg); --c-surface:#12150F; --c-surface-2:#171B13; --c-panel:#15180F;
+  --c-border:#282E1E; --c-divider:#1E2218;
+  --c-text:#D9D2B4; --c-text-muted:#A19A78; --c-text-faint:#77715A;
+  --c-accent:#B8922E; --c-accent-hover:#CBA544; --c-accent-soft:rgba(184,146,46,.12);
+  --c-on-accent:#120E04;
+  --c-success:#6C9149; --c-danger:#CB6E6E; --c-warning:#C07830; --c-info:#78A4B6;
+  --c-brand-1:var(--p-fantasy-dark-1); --c-brand-2:var(--p-fantasy-dark-2); --c-brand-3:var(--p-fantasy-dark-3);
+  --c-btn-1:#B8922E; --c-btn-2:#CBA544; --c-btn-3:#E0C070;
+  --c-brand-wash:rgba(163,75,75,.10);
+  --c-brand-glow:rgba(201,165,68,.22);
+  --c-brand-edge:rgba(201,165,68,.16);
+  --c-brand-edge-strong:rgba(201,165,68,.30);
+  --c-selection:rgba(184,146,46,.25);
   --c-burgundy:#5E2828; --c-forest:#1E3018;
   --shadow-sm:0 1px 3px rgba(0,0,0,.4);
   --shadow-md:0 4px 12px rgba(0,0,0,.5);
@@ -88,43 +169,154 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
   --font-mono:'Courier New',monospace;
 }
 
-/* --- Theme: Fantasy Light --- */
-[data-theme="fantasy-light"]{
-  --c-bg:#F0E6CC; --c-surface:#F8F0D8; --c-surface-2:#F2E8CE; --c-panel:#F5EDD5;
+/* --- Theme: Gilded Vellum --- */
+:root[data-theme="fantasy-light"]{
+  --c-bg:var(--p-fantasy-light-bg); --c-surface:#F8F0D8; --c-surface-2:#F2E8CE; --c-panel:#F5EDD5;
   --c-border:#D8CCA0; --c-divider:#E0D4B8;
-  --c-text:#3A2E1C; --c-text-muted:#7A6B4E; --c-text-faint:#A89878;
-  --c-accent:#7A5E1E; --c-accent-hover:#8A6E2E; --c-accent-soft:rgba(122,94,30,.10);
-  --c-success:#5E7A3E; --c-danger:#A04040; --c-warning:#B07030; --c-info:#4E6E8A;
+  --c-text:#3A2E1C; --c-text-muted:#6B5C3E; --c-text-faint:#8F7F5E;
+  --c-accent:#6E5316; --c-accent-hover:#7F621F; --c-accent-soft:rgba(110,83,22,.10);
+  --c-on-accent:#1F1606;
+  --c-success:#4F6B32; --c-danger:#963A3A; --c-warning:#8E5A20; --c-info:#3F5C77;
+  --c-brand-1:var(--p-fantasy-light-1); --c-brand-2:var(--p-fantasy-light-2); --c-brand-3:var(--p-fantasy-light-3);
+  --c-btn-1:#A17D2C; --c-btn-2:#B08A3A; --c-btn-3:#C2A25A;
+  --c-brand-wash:rgba(92,107,62,.14);
+  --c-brand-glow:rgba(138,106,34,.18);
+  --c-brand-edge:rgba(138,106,34,.22);
+  --c-brand-edge-strong:rgba(138,106,34,.38);
+  --c-selection:rgba(110,83,22,.20);
   --c-sage:#8A9A6E; --c-rose:#B08A8A;
-  --shadow-sm:0 1px 3px rgba(80,60,20,.08);
-  --shadow-md:0 4px 12px rgba(80,60,20,.10);
-  --shadow-lg:0 12px 32px rgba(80,60,20,.15);
+  --shadow-sm:0 1px 3px rgba(58,46,28,.08);
+  --shadow-md:0 4px 12px rgba(58,46,28,.12);
+  --shadow-lg:0 12px 32px rgba(58,46,28,.18);
   --font-display:'Georgia','Cambria',serif;
   --font-body:'Georgia','Cambria','Times New Roman',serif;
   --font-mono:'Courier New',monospace;
 }
 
-/* --- Theme: Aurora (Brand — pinks, blues, purples) --- */
-[data-theme="aurora"]{
-  --c-bg:#0a0814; --c-surface:#110d20; --c-surface-2:#181230; --c-panel:#151028;
-  --c-border:#2a1f48; --c-divider:#221838;
-  --c-text:#E8E0F0; --c-text-muted:#9A8AB8; --c-text-faint:#5E5078;
-  --c-accent:#A855F7; --c-accent-hover:#C084FC; --c-accent-soft:rgba(168,85,247,.12);
-  --c-success:#6B9F4E; --c-danger:#E056A0; --c-warning:#D4923B; --c-info:#6366F1;
-  --c-brand-1:#6366F1; --c-brand-2:#8B5CF6; --c-brand-3:#EC4899;
+/* --- Theme: Nebula --- */
+:root[data-theme="nebula"]{
+  --c-bg:var(--p-nebula-bg); --c-surface:#0A1B26; --c-surface-2:#0F2532; --c-panel:#0C2030;
+  --c-border:#1B3B4C; --c-divider:#152E3C;
+  --c-text:#DDF1F6; --c-text-muted:#95B7C4; --c-text-faint:#6C8C99;
+  --c-accent:#22D3EE; --c-accent-hover:#67E8F9; --c-accent-soft:rgba(34,211,238,.12);
+  --c-on-accent:#04161C;
+  --c-success:#34D399; --c-danger:#F87171; --c-warning:#FBBF24; --c-info:#38BDF8;
+  --c-brand-1:var(--p-nebula-1); --c-brand-2:var(--p-nebula-2); --c-brand-3:var(--p-nebula-3);
+  --c-btn-1:#0EA5E9; --c-btn-2:#22D3EE; --c-btn-3:#34D399;
+  --c-brand-wash:rgba(14,165,233,.10);
+  --c-brand-glow:rgba(34,211,238,.22);
+  --c-brand-edge:rgba(34,211,238,.16);
+  --c-brand-edge-strong:rgba(34,211,238,.30);
+  --c-selection:rgba(34,211,238,.25);
   --shadow-sm:0 1px 3px rgba(0,0,0,.4);
   --shadow-md:0 4px 12px rgba(0,0,0,.5);
   --shadow-lg:0 12px 32px rgba(0,0,0,.6);
-  --font-display:'Cinzel','Georgia','Cambria',serif;
+  --font-display:'Optima','Candara','Segoe UI',system-ui,sans-serif;
+  --font-body:system-ui,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --font-mono:'Courier New',monospace;
+}
+
+/* --- Theme: Ember --- */
+:root[data-theme="ember"]{
+  --c-bg:var(--p-ember-bg); --c-surface:#1F120E; --c-surface-2:#2A1813; --c-panel:#241511;
+  --c-border:#40241B; --c-divider:#331C15;
+  --c-text:#F5E3D7; --c-text-muted:#C09C88; --c-text-faint:#94705E;
+  --c-accent:#F97316; --c-accent-hover:#FB923C; --c-accent-soft:rgba(249,115,22,.12);
+  --c-on-accent:#1A0A03;
+  --c-success:#84A94E; --c-danger:#EF4444; --c-warning:#FBBF24; --c-info:#C2764A;
+  --c-brand-1:var(--p-ember-1); --c-brand-2:var(--p-ember-2); --c-brand-3:var(--p-ember-3);
+  --c-btn-1:#F97316; --c-btn-2:#FB923C; --c-btn-3:#FBBF24;
+  --c-brand-wash:rgba(217,48,48,.10);
+  --c-brand-glow:rgba(249,115,22,.22);
+  --c-brand-edge:rgba(249,115,22,.16);
+  --c-brand-edge-strong:rgba(249,115,22,.30);
+  --c-selection:rgba(249,115,22,.25);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.4);
+  --shadow-md:0 4px 12px rgba(0,0,0,.5);
+  --shadow-lg:0 12px 32px rgba(0,0,0,.6);
+  --font-display:'Palatino Linotype','Book Antiqua','Georgia',serif;
   --font-body:'Georgia','Cambria','Times New Roman',serif;
   --font-mono:'Courier New',monospace;
 }
 
-/* --- Brand gradient text & logo --- */
+/* --- Theme: Sakura --- */
+:root[data-theme="sakura"]{
+  --c-bg:var(--p-sakura-bg); --c-surface:#FFF7FA; --c-surface-2:#F8E9EF; --c-panel:#FEF4F8;
+  --c-border:#E7CBD7; --c-divider:#F0DBE3;
+  --c-text:#33202B; --c-text-muted:#6E4E5D; --c-text-faint:#96737F;
+  --c-accent:#A61E5D; --c-accent-hover:#BE185D; --c-accent-soft:rgba(166,30,93,.10);
+  --c-on-accent:#FFF3F8;
+  --c-success:#4B7A45; --c-danger:#B02A3D; --c-warning:#96601C; --c-info:#4B5FA8;
+  --c-brand-1:var(--p-sakura-1); --c-brand-2:var(--p-sakura-2); --c-brand-3:var(--p-sakura-3);
+  --c-btn-1:#A61E5D; --c-btn-2:#8B2ACB; --c-btn-3:#BE185D;
+  --c-brand-wash:rgba(190,24,93,.14);
+  --c-brand-glow:rgba(147,51,234,.18);
+  --c-brand-edge:rgba(147,51,234,.22);
+  --c-brand-edge-strong:rgba(147,51,234,.38);
+  --c-selection:rgba(166,30,93,.20);
+  --shadow-sm:0 1px 3px rgba(51,32,43,.08);
+  --shadow-md:0 4px 12px rgba(51,32,43,.12);
+  --shadow-lg:0 12px 32px rgba(51,32,43,.18);
+  --font-display:'Palatino Linotype','Book Antiqua','Georgia',serif;
+  --font-body:'Georgia','Cambria','Times New Roman',serif;
+  --font-mono:'Courier New',monospace;
+}
+
+/* --- Theme: Moss --- */
+:root[data-theme="moss"]{
+  --c-bg:var(--p-moss-bg); --c-surface:#F6F8F1; --c-surface-2:#E8EEE1; --c-panel:#F2F5EC;
+  --c-border:#CBD6C0; --c-divider:#DCE3D2;
+  --c-text:#222B1F; --c-text-muted:#535F4B; --c-text-faint:#7C8873;
+  --c-accent:#3F6B3A; --c-accent-hover:#4C7F45; --c-accent-soft:rgba(63,107,58,.10);
+  --c-on-accent:#F4FAF1;
+  --c-success:#3F7A46; --c-danger:#96393C; --c-warning:#8A6218; --c-info:#2F6470;
+  --c-brand-1:var(--p-moss-1); --c-brand-2:var(--p-moss-2); --c-brand-3:var(--p-moss-3);
+  --c-btn-1:#35602F; --c-btn-2:#4A6E12; --c-btn-3:#0F766E;
+  --c-brand-wash:rgba(63,107,12,.14);
+  --c-brand-glow:rgba(79,110,18,.18);
+  --c-brand-edge:rgba(79,110,18,.22);
+  --c-brand-edge-strong:rgba(79,110,18,.38);
+  --c-selection:rgba(63,107,58,.20);
+  --shadow-sm:0 1px 3px rgba(34,43,31,.08);
+  --shadow-md:0 4px 12px rgba(34,43,31,.12);
+  --shadow-lg:0 12px 32px rgba(34,43,31,.18);
+  --font-display:'Iowan Old Style','Palatino Linotype','Georgia',serif;
+  --font-body:'Georgia','Cambria','Times New Roman',serif;
+  --font-mono:'Courier New',monospace;
+}
+
+/* --- Theme: Slate --- */
+:root[data-theme="slate"]{
+  --c-bg:var(--p-slate-bg); --c-surface:#12181F; --c-surface-2:#18202A; --c-panel:#151C24;
+  --c-border:#26303C; --c-divider:#1E2630;
+  --c-text:#E9EFF6; --c-text-muted:#A3B1C2; --c-text-faint:#78889A;
+  --c-accent:#3B82F6; --c-accent-hover:#60A5FA; --c-accent-soft:rgba(59,130,246,.12);
+  --c-on-accent:#EFF6FF;
+  --c-success:#22C55E; --c-danger:#EF4444; --c-warning:#F59E0B; --c-info:#38BDF8;
+  --c-brand-1:var(--p-slate-1); --c-brand-2:var(--p-slate-2); --c-brand-3:var(--p-slate-3);
+  --c-btn-1:#1D4ED8; --c-btn-2:#2563EB; --c-btn-3:#4F46E5;
+  --c-brand-wash:rgba(37,99,235,.10);
+  --c-brand-glow:rgba(56,189,248,.22);
+  --c-brand-edge:rgba(56,189,248,.16);
+  --c-brand-edge-strong:rgba(56,189,248,.30);
+  --c-selection:rgba(59,130,246,.25);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.4);
+  --shadow-md:0 4px 12px rgba(0,0,0,.5);
+  --shadow-lg:0 12px 32px rgba(0,0,0,.6);
+  --font-display:'Optima','Candara','Segoe UI',system-ui,sans-serif;
+  --font-body:system-ui,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --font-mono:'Courier New',monospace;
+}
+
+/* --- Theme identity ---
+   These rules are theme-agnostic: each one reads the active theme's brand
+   tokens, so all ten themes get the same gradient treatment without a block
+   per theme. The [data-theme] prefix only exists to outrank the plain
+   component rules further down the file. */
 .brand-text{
-  font-family:'Cinzel','Georgia',serif!important;
+  font-family:var(--font-display);
   font-weight:700;
-  background:linear-gradient(135deg,var(--c-brand-1,#6366F1),var(--c-brand-2,#8B5CF6),var(--c-brand-3,#EC4899));
+  background:linear-gradient(135deg,var(--c-brand-1),var(--c-brand-2),var(--c-brand-3));
   -webkit-background-clip:text;
   background-clip:text;
   -webkit-text-fill-color:transparent;
@@ -133,28 +325,65 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 }
 .sidebar-logo img{
   width:28px;height:28px;flex-shrink:0;
-  filter:drop-shadow(0 0 4px rgba(139,92,246,.3));
+  filter:drop-shadow(0 0 4px var(--c-brand-glow));
 }
 .sidebar-logo .brand-text{font-size:var(--ts-sm);white-space:nowrap}
+:root[data-theme] .nav-item.active{background:linear-gradient(90deg,var(--c-brand-wash),transparent)}
+/* Primary buttons use their own stops: the branding trio carries no text, so it
+   stays vivid, while these are picked for legibility under --c-on-accent. */
+:root[data-theme] .btn.primary{
+  background:linear-gradient(135deg,var(--c-btn-1),var(--c-btn-2));
+  border-color:transparent;color:var(--c-on-accent)
+}
+:root[data-theme] .btn.primary:hover{background:linear-gradient(135deg,var(--c-btn-2),var(--c-btn-3))}
+:root[data-theme] .progress-fill{background:linear-gradient(90deg,var(--c-brand-1),var(--c-brand-3))}
+:root[data-theme] .save-dot{background:var(--c-brand-2)}
+:root[data-theme] ::selection{background:var(--c-selection);color:var(--c-text)}
+:root[data-theme] .card{border-color:var(--c-brand-edge)}
+:root[data-theme] .card.hoverable:hover{box-shadow:0 4px 20px var(--c-brand-glow);border-color:var(--c-brand-edge-strong)}
 
-/* --- Aurora theme extras --- */
-[data-theme="aurora"] .nav-item.active{
-  background:linear-gradient(90deg,rgba(99,102,241,.08),transparent);
-}
-[data-theme="aurora"] .btn.primary{
-  background:linear-gradient(135deg,var(--c-brand-1),var(--c-brand-2));
-  border-color:transparent;
-}
-[data-theme="aurora"] .btn.primary:hover{
-  background:linear-gradient(135deg,var(--c-brand-2),var(--c-brand-3));
-}
-[data-theme="aurora"] .progress-fill{
-  background:linear-gradient(90deg,var(--c-brand-1),var(--c-brand-3));
-}
-[data-theme="aurora"] .save-dot{background:var(--c-brand-2)}
-[data-theme="aurora"] ::selection{background:rgba(168,85,247,.25)}
-[data-theme="aurora"] .card{border-color:rgba(139,92,246,.15)}
-[data-theme="aurora"] .card.hoverable:hover{box-shadow:0 4px 20px rgba(139,92,246,.1);border-color:rgba(139,92,246,.25)}
+/* --- Settings theme picker swatches ---
+   One rule per theme, each pointing at that theme's palette values. */
+.theme-option[data-swatch]{background:var(--sw-panel);color:var(--sw-text);border-color:var(--sw-border)}
+.theme-option[data-swatch] .theme-option-desc{color:var(--sw-muted)}
+.theme-chip-bg{background:var(--sw-bg)}
+.theme-chip-grad{background:var(--sw-grad)}
+.theme-option[data-swatch="aurora"]{--sw-bg:var(--p-aurora-bg);--sw-grad:linear-gradient(135deg,var(--p-aurora-1),var(--p-aurora-2),var(--p-aurora-3));--sw-panel:var(--p-aurora-panel);--sw-text:var(--p-aurora-text);--sw-muted:var(--p-aurora-muted);--sw-border:var(--p-aurora-border)}
+.theme-option[data-swatch="dark"]{--sw-bg:var(--p-dark-bg);--sw-grad:linear-gradient(135deg,var(--p-dark-1),var(--p-dark-2),var(--p-dark-3));--sw-panel:var(--p-dark-panel);--sw-text:var(--p-dark-text);--sw-muted:var(--p-dark-muted);--sw-border:var(--p-dark-border)}
+.theme-option[data-swatch="light"]{--sw-bg:var(--p-light-bg);--sw-grad:linear-gradient(135deg,var(--p-light-1),var(--p-light-2),var(--p-light-3));--sw-panel:var(--p-light-panel);--sw-text:var(--p-light-text);--sw-muted:var(--p-light-muted);--sw-border:var(--p-light-border)}
+.theme-option[data-swatch="fantasy-dark"]{--sw-bg:var(--p-fantasy-dark-bg);--sw-grad:linear-gradient(135deg,var(--p-fantasy-dark-1),var(--p-fantasy-dark-2),var(--p-fantasy-dark-3));--sw-panel:var(--p-fantasy-dark-panel);--sw-text:var(--p-fantasy-dark-text);--sw-muted:var(--p-fantasy-dark-muted);--sw-border:var(--p-fantasy-dark-border)}
+.theme-option[data-swatch="fantasy-light"]{--sw-bg:var(--p-fantasy-light-bg);--sw-grad:linear-gradient(135deg,var(--p-fantasy-light-1),var(--p-fantasy-light-2),var(--p-fantasy-light-3));--sw-panel:var(--p-fantasy-light-panel);--sw-text:var(--p-fantasy-light-text);--sw-muted:var(--p-fantasy-light-muted);--sw-border:var(--p-fantasy-light-border)}
+.theme-option[data-swatch="nebula"]{--sw-bg:var(--p-nebula-bg);--sw-grad:linear-gradient(135deg,var(--p-nebula-1),var(--p-nebula-2),var(--p-nebula-3));--sw-panel:var(--p-nebula-panel);--sw-text:var(--p-nebula-text);--sw-muted:var(--p-nebula-muted);--sw-border:var(--p-nebula-border)}
+.theme-option[data-swatch="ember"]{--sw-bg:var(--p-ember-bg);--sw-grad:linear-gradient(135deg,var(--p-ember-1),var(--p-ember-2),var(--p-ember-3));--sw-panel:var(--p-ember-panel);--sw-text:var(--p-ember-text);--sw-muted:var(--p-ember-muted);--sw-border:var(--p-ember-border)}
+.theme-option[data-swatch="sakura"]{--sw-bg:var(--p-sakura-bg);--sw-grad:linear-gradient(135deg,var(--p-sakura-1),var(--p-sakura-2),var(--p-sakura-3));--sw-panel:var(--p-sakura-panel);--sw-text:var(--p-sakura-text);--sw-muted:var(--p-sakura-muted);--sw-border:var(--p-sakura-border)}
+.theme-option[data-swatch="moss"]{--sw-bg:var(--p-moss-bg);--sw-grad:linear-gradient(135deg,var(--p-moss-1),var(--p-moss-2),var(--p-moss-3));--sw-panel:var(--p-moss-panel);--sw-text:var(--p-moss-text);--sw-muted:var(--p-moss-muted);--sw-border:var(--p-moss-border)}
+.theme-option[data-swatch="slate"]{--sw-bg:var(--p-slate-bg);--sw-grad:linear-gradient(135deg,var(--p-slate-1),var(--p-slate-2),var(--p-slate-3));--sw-panel:var(--p-slate-panel);--sw-text:var(--p-slate-text);--sw-muted:var(--p-slate-muted);--sw-border:var(--p-slate-border)}
+
+/* --- Settings theme picker ---
+   Ten options, so the grid fills the width it has and each option stays a
+   comfortable tap target rather than shrinking to fit a fixed column count. */
+.theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:20px}
+.theme-option{cursor:pointer;padding:14px}
+.theme-option.active{border:2px solid var(--c-accent);padding:13px}
+.theme-option-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.theme-option-name{font-weight:700}
+.theme-option-desc{font-size:var(--ts-xs);color:var(--c-text-muted);line-height:1.5}
+.theme-chip{width:18px;height:18px;border-radius:var(--radius-sm);border:1px solid var(--c-border);flex-shrink:0}
+
+/* --- Settings theme picker swatches ---
+   One rule per theme, each pointing at that theme's palette values. */
+.theme-chip-bg{background:var(--sw-bg)}
+.theme-chip-grad{background:var(--sw-grad)}
+.theme-option[data-swatch="aurora"]{--sw-bg:var(--p-aurora-bg);--sw-grad:linear-gradient(135deg,var(--p-aurora-1),var(--p-aurora-2),var(--p-aurora-3))}
+.theme-option[data-swatch="dark"]{--sw-bg:var(--p-dark-bg);--sw-grad:linear-gradient(135deg,var(--p-dark-1),var(--p-dark-2),var(--p-dark-3))}
+.theme-option[data-swatch="light"]{--sw-bg:var(--p-light-bg);--sw-grad:linear-gradient(135deg,var(--p-light-1),var(--p-light-2),var(--p-light-3))}
+.theme-option[data-swatch="fantasy-dark"]{--sw-bg:var(--p-fantasy-dark-bg);--sw-grad:linear-gradient(135deg,var(--p-fantasy-dark-1),var(--p-fantasy-dark-2),var(--p-fantasy-dark-3))}
+.theme-option[data-swatch="fantasy-light"]{--sw-bg:var(--p-fantasy-light-bg);--sw-grad:linear-gradient(135deg,var(--p-fantasy-light-1),var(--p-fantasy-light-2),var(--p-fantasy-light-3))}
+.theme-option[data-swatch="nebula"]{--sw-bg:var(--p-nebula-bg);--sw-grad:linear-gradient(135deg,var(--p-nebula-1),var(--p-nebula-2),var(--p-nebula-3))}
+.theme-option[data-swatch="ember"]{--sw-bg:var(--p-ember-bg);--sw-grad:linear-gradient(135deg,var(--p-ember-1),var(--p-ember-2),var(--p-ember-3))}
+.theme-option[data-swatch="sakura"]{--sw-bg:var(--p-sakura-bg);--sw-grad:linear-gradient(135deg,var(--p-sakura-1),var(--p-sakura-2),var(--p-sakura-3))}
+.theme-option[data-swatch="moss"]{--sw-bg:var(--p-moss-bg);--sw-grad:linear-gradient(135deg,var(--p-moss-1),var(--p-moss-2),var(--p-moss-3))}
+.theme-option[data-swatch="slate"]{--sw-bg:var(--p-slate-bg);--sw-grad:linear-gradient(135deg,var(--p-slate-1),var(--p-slate-2),var(--p-slate-3))}
 
 /* --- Layout Shell ---
    --app-h is set by DAL.applyViewport() from visualViewport so mobile browser
@@ -192,8 +421,16 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 .save-status{display:flex;align-items:center;gap:6px;font-size:var(--ts-xs);color:var(--c-text-faint);padding:2px 8px}
 .save-dot{width:8px;height:8px;border-radius:50%;background:var(--c-success);transition:background .3s}
 .save-dot.saving{background:var(--c-warning);animation:pulse 1s infinite}
+.save-dot.unsaved{background:var(--c-warning)}
 .save-dot.error{background:var(--c-danger)}
 .save-dot.ripple{animation:inkDrop .4s ease-out}
+/* iOS-style on/off switch used in Settings (Saving card). */
+.switch{position:relative;width:44px;height:26px;border-radius:13px;border:none;background:none;cursor:pointer;flex-shrink:0;padding:0}
+.switch .track{position:absolute;inset:0;background:var(--c-border);border-radius:13px;transition:background .2s}
+.switch .track::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.switch[aria-pressed="true"] .track{background:var(--c-success)}
+.switch[aria-pressed="true"] .track::after{transform:translateX(18px)}
+.switch:focus-visible{outline:2px solid var(--c-accent);outline-offset:2px;border-radius:14px}
 @keyframes inkDrop{0%{transform:scale(1);box-shadow:0 0 0 0 var(--c-accent-soft)}100%{transform:scale(1);box-shadow:0 0 0 8px transparent}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 .search-box{display:flex;align-items:center;gap:6px;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--radius);padding:4px 8px;max-width:200px}
@@ -265,9 +502,38 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 @keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes toastOut{to{opacity:0;transform:translateY(12px)}}
 
-/* Tooltips */
-.tooltip{position:fixed;z-index:300;background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius-sm);padding:4px 8px;font-size:var(--ts-xs);color:var(--c-text);box-shadow:var(--shadow-sm);pointer-events:none;max-width:240px;opacity:0;transition:opacity 120ms}
-.tooltip.visible{opacity:1}
+/* Info icons — the small "(i)" next to writing/lore tools.
+   The icon is an inline-flex button the size of a line of text, so it sits
+   right beside a label without pushing the layout around. The popover it
+   toggles is a tiny fixed card that never captures pointer events over the
+   rest of the UI — it only paints text and dismisses on any outside tap, so on
+   a phone it can never sit on top of the buttons it explains. */
+.info-icon{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:1.05em;height:1.05em;min-width:18px;min-height:18px;
+  margin-left:5px;padding:0;flex-shrink:0;vertical-align:middle;
+  font-family:Georgia,serif;font-style:italic;font-weight:700;
+  font-size:.85em;line-height:1;
+  color:var(--c-text-faint);
+  background:var(--c-bg-elev,var(--c-surface,#0000));
+  border:1px solid var(--c-border);border-radius:999px;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:color var(--transition),background var(--transition),border-color var(--transition)
+}
+.info-icon span{font-size:inherit;line-height:1}
+.info-icon:hover,.info-icon:focus-visible{color:var(--c-accent);border-color:var(--c-accent);background:var(--c-accent-soft,transparent)}
+.info-icon:active{transform:scale(.92)}
+.info-popover{
+  position:fixed;z-index:400;
+  background:var(--c-bg);border:1px solid var(--c-border);
+  border-radius:var(--radius);padding:10px 12px;
+  font-size:var(--ts-xs);line-height:1.5;color:var(--c-text);
+  box-shadow:var(--shadow-sm,0 4px 16px rgba(0,0,0,.25));
+  max-width:min(320px,calc(100vw - 16px));width:max-content;
+  pointer-events:none;opacity:0;transform:translateY(-2px);
+  transition:opacity 120ms,transform 120ms
+}
+.info-popover.visible{opacity:1;transform:translateY(0)}
 
 /* Empty State */
 .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;text-align:center;color:var(--c-text-muted)}
@@ -283,12 +549,25 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 .workspace{display:flex;height:100%;overflow:hidden}
 .workspace-sidebar{width:200px;flex-shrink:0;background:var(--c-surface);border-right:1px solid var(--c-border);display:flex;flex-direction:column;overflow-y:auto}
 .workspace-main{flex:1;overflow-y:auto;padding:16px;min-width:0}
-/* Mobile-only cluster inside the project header; see the compact block below. */
-.ws-compact-actions{display:none}
-/* Each theme card previews its own palette by carrying data-theme, which also
-   rebinds the colour tokens locally — so the text must read from those tokens
-   or light previews inherit the dark theme's near-invisible text colour. */
-.card[data-action="set-theme"]{background:var(--c-panel);color:var(--c-text)}
+/* File/Edit/View menu bar lives in the project workspace header only —
+   never on Dashboard/Projects/Settings. Each trigger opens a dropdown built
+   from DAL.MENUS; every item routes to a real action, nothing decorative. */
+.ws-menubar{display:flex;align-items:center;gap:1px;flex-shrink:0}
+.menu-trigger{display:flex;align-items:center;gap:3px;height:32px;padding:0 10px;border-radius:6px;background:transparent;border:1px solid transparent;color:var(--c-text-muted);font-size:var(--ts-sm);font-weight:600;cursor:pointer;white-space:nowrap}
+.menu-trigger:hover{background:var(--c-surface-2);color:var(--c-text)}
+.menu-trigger[aria-expanded="true"]{background:var(--c-surface-2);color:var(--c-text);border-color:var(--c-border)}
+.menu-caret{font-size:9px;opacity:.6}
+.menu-dropdown{position:fixed;z-index:5000;min-width:200px;background:var(--c-panel);border:1px solid var(--c-border);border-radius:10px;box-shadow:0 12px 32px -6px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.2);padding:5px}
+.menu-item{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:7px 11px;border-radius:6px;font-size:var(--ts-sm);color:var(--c-text-muted);cursor:pointer;white-space:nowrap}
+.menu-item:hover{background:var(--c-accent-soft);color:var(--c-text)}
+.menu-item.has-sub{justify-content:space-between}
+.menu-chev{opacity:.5;font-size:13px}
+.menu-shortcut{font-size:var(--ts-xs);color:var(--c-text-faint);font-family:var(--font-mono,monospace)}
+.menu-divider{height:1px;margin:4px 6px;background:var(--c-border)}
+.menu-sub-dropdown{position:fixed;z-index:5001;min-width:180px;max-height:min(70vh,420px);overflow-y:auto;background:var(--c-panel);border:1px solid var(--c-border);border-radius:10px;box-shadow:0 12px 32px -6px rgba(0,0,0,.45);padding:5px;left:100%;top:-5px}
+/* .save-status / .save-dot base styles already defined near line 192 —
+   reused here unchanged so the menu bar's status dot matches everywhere else. */
+.ws-menubar .save-status{margin-left:4px}
 .workspace-topbar{height:var(--topbar-h);background:var(--c-surface);border-bottom:1px solid var(--c-border);display:flex;align-items:center;gap:8px;padding:0 12px;flex-shrink:0}
 .ws-nav-group-label{font-size:var(--ts-xs);font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--c-text-faint);padding:8px 16px 4px}
 .ws-nav-item{display:flex;align-items:center;gap:8px;padding:7px 16px;font-size:var(--ts-sm);color:var(--c-text-muted);cursor:pointer;white-space:nowrap;border-left:3px solid transparent}
@@ -372,9 +651,19 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 .lore-main{flex:1;overflow-y:auto;padding:16px}
 
 /* Mind Map / Story Graph Canvas */
-.canvas-container{position:relative;overflow:auto;background:var(--c-surface);background-image:radial-gradient(circle,var(--c-border) 1px,transparent 1px);background-size:20px 20px}
+.canvas-container{position:relative;overflow:auto;background:var(--c-surface);background-image:radial-gradient(circle,var(--c-border) 1px,transparent 1px);background-size:20px 20px;-webkit-user-select:none;user-select:none}
+/* The inner box is what scrolls, so its size tracks the zoom (set from script);
+   the stage inside it is what actually gets scaled. */
 .canvas-inner{position:relative;width:2600px;height:1700px}
-.canvas-node{position:absolute;background:var(--c-panel);border:2px solid var(--c-border);border-radius:var(--radius);padding:10px 14px;min-width:140px;max-width:220px;cursor:grab;transition:box-shadow var(--transition),border-color var(--transition)}
+.canvas-stage{position:absolute;top:0;left:0;width:2600px;height:1700px;transform-origin:0 0}
+/* Grab mode turns the whole board into something you drag. Touch scrolling is
+   handed over to the pan gesture only while the mode is on, so ordinary page
+   and canvas scrolling still work the rest of the time. */
+.canvas-container.grab-mode{cursor:grab;touch-action:none}
+.canvas-container.grab-mode:active{cursor:grabbing}
+.canvas-container.grab-mode .canvas-node{cursor:grab}
+.canvas-container.grab-mode:active .canvas-node{cursor:grabbing}
+.canvas-node{position:absolute;touch-action:none;background:var(--c-panel);border:2px solid var(--c-border);border-radius:var(--radius);padding:10px 14px;min-width:140px;max-width:220px;cursor:grab;transition:box-shadow var(--transition),border-color var(--transition)}
 .canvas-node:hover{border-color:var(--c-accent);box-shadow:var(--shadow-sm)}
 .canvas-node.selected{border-color:var(--c-accent);box-shadow:0 0 0 3px var(--c-accent-soft)}
 .canvas-node.start-node{border-color:var(--c-accent);box-shadow:0 0 0 2px var(--c-accent-soft)}
@@ -385,9 +674,15 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 .canvas-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
 .canvas-svg path{pointer-events:stroke;cursor:pointer}
 .canvas-toolbar{display:flex;align-items:center;gap:4px;padding:6px 12px;background:var(--c-surface);border-bottom:1px solid var(--c-border)}
-.canvas-toolbar .tb-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);color:var(--c-text-muted)}
+/* Buttons keep their size and the strip scrolls instead of squeezing them, so a
+   narrow screen can still reach every control at full tap size. */
+.canvas-toolbar{overflow-x:auto;scrollbar-width:none}
+.canvas-toolbar::-webkit-scrollbar{height:0}
+.canvas-toolbar .tb-btn{width:30px;height:30px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);color:var(--c-text-muted)}
 .canvas-toolbar .tb-btn:hover{background:var(--c-surface-2);color:var(--c-text)}
 .canvas-toolbar .tb-btn.active{background:var(--c-accent-soft);color:var(--c-accent)}
+.canvas-toolbar .tb-sep{width:1px;height:20px;background:var(--c-border);margin:0 4px;flex:0 0 auto}
+.tb-zoom{flex:0 0 auto;min-width:44px;text-align:center;font-size:var(--ts-xs);color:var(--c-text-muted);font-variant-numeric:tabular-nums}
 
 /* Book Preview / Ebook Reader */
 .book-reader{display:flex;flex-direction:column;height:100%;background:var(--c-bg)}
@@ -417,8 +712,44 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 .playtest-choices{display:flex;flex-direction:column;gap:8px}
 .playtest-choice{padding:10px 16px;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--radius);cursor:pointer;font-size:var(--ts-sm)}
 .playtest-choice:hover{border-color:var(--c-accent);background:var(--c-accent-soft)}
-.playtest-choice.disabled{opacity:.4;cursor:default}
+.playtest-choice.disabled{opacity:.55;cursor:default;text-align:left}
 .playtest-choice.disabled:hover{border-color:var(--c-border);background:var(--c-surface-2)}
+/* A locked choice states its requirement instead of teasing the reader. */
+.playtest-choice-why{display:block;margin-top:3px;font-size:var(--ts-xs);color:var(--c-text-muted);font-style:italic}
+.terminal-mode .playtest-choice-why{color:#0a0;font-style:normal}
+.checkup-head{font-size:var(--ts-xs);text-transform:uppercase;letter-spacing:.5px;color:var(--c-text-faint);margin:12px 0 4px}
+.checkup-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px;border:1px solid var(--c-border);border-left:3px solid var(--c-warning);border-radius:var(--radius-sm);margin-bottom:4px}
+.checkup-row.problem{border-left-color:var(--c-danger)}
+.checkup-scope{font-size:var(--ts-xs);font-weight:700;min-width:120px}
+.checkup-text{font-size:var(--ts-sm);color:var(--c-text-muted);flex:1 1 240px;line-height:1.5}
+.playtest-end{border:1px solid var(--c-border);border-left:3px solid var(--c-accent);border-radius:var(--radius);padding:16px;background:var(--c-surface-2)}
+.playtest-end.failure{border-left-color:var(--c-danger)}
+.playtest-end-kind{font-size:var(--ts-xs);text-transform:uppercase;letter-spacing:.5px;color:var(--c-text-faint)}
+.playtest-end-title{font-family:var(--font-display);font-size:var(--ts-lg);font-weight:700;margin:4px 0}
+.playtest-end-note{font-size:var(--ts-sm);color:var(--c-text-muted);line-height:1.5}
+.playtest-end-stats{font-size:var(--ts-xs);color:var(--c-text-faint);margin-top:8px}
+.playtest-end-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.terminal-mode .playtest-end{background:#001200;border-color:#0a0;border-left-color:#0f0}
+.terminal-mode .playtest-end.failure{border-left-color:#0a0}
+.terminal-mode .playtest-end-title{color:#0f0}
+.terminal-mode .playtest-end-kind,.terminal-mode .playtest-end-note,.terminal-mode .playtest-end-stats{color:#0a0}
+.playtest-empty{font-size:var(--ts-xs);color:var(--c-text-faint)}
+.playtest-bar{height:4px;background:var(--c-surface-2);border-radius:var(--radius-sm);overflow:hidden;margin:1px 0 6px}
+.playtest-bar-fill{height:100%;background:var(--c-accent);border-radius:var(--radius-sm)}
+.playtest-delta{font-size:var(--ts-xs);margin-right:6px}
+.playtest-delta.up{color:var(--c-success)}
+.playtest-delta.down{color:var(--c-danger)}
+.playtest-equip{margin-left:auto;flex-shrink:0}
+.playtest-changes{margin-top:16px;border-top:1px solid var(--c-divider);padding-top:8px}
+.playtest-changes-head{font-size:var(--ts-xs);text-transform:uppercase;letter-spacing:.5px;color:var(--c-text-faint);margin-bottom:4px}
+.playtest-change{font-size:var(--ts-xs);color:var(--c-text-muted);padding:1px 0}
+.playtest-change.up{color:var(--c-success)}
+.playtest-change.down{color:var(--c-danger)}
+.terminal-mode .playtest-bar{background:#001a00}
+.terminal-mode .playtest-bar-fill{background:#0f0}
+.terminal-mode .playtest-delta.up,.terminal-mode .playtest-change.up{color:#0f0}
+.terminal-mode .playtest-delta.down,.terminal-mode .playtest-change.down{color:#0a0}
+.terminal-mode .playtest-changes-head,.terminal-mode .playtest-change{color:#0a0}
 .playtest-inspector{width:260px;flex-shrink:0;background:var(--c-surface);border-left:1px solid var(--c-border);overflow-y:auto;padding:16px}
 .playtest-inspector h4{font-size:var(--ts-xs);text-transform:uppercase;letter-spacing:.5px;color:var(--c-text-faint);margin-bottom:6px;margin-top:12px}
 .playtest-inspector h4:first-child{margin-top:0}
@@ -482,6 +813,304 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
   .content{padding:16px}
 }
 
+/* Dashboard grid ------------------------------------------------------------
+   Two columns on anything roomy, one column on phones. Card width is a saved
+   preference, but on a narrow screen every card spans the single column: a
+   half-width card there would be a column of unreadable slivers. */
+.dashboard{max-width:1180px;margin:0 auto}
+.dash-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  margin-bottom:16px
+}
+.dash-bar-text{display:flex;flex-direction:column;gap:2px;min-width:0}
+.dash-bar-text strong{font-family:var(--font-display);font-size:var(--ts-xl);font-weight:600;color:var(--c-text)}
+.dash-bar-text span{font-size:var(--ts-xs);color:var(--c-text-muted)}
+.dash-bar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+.dash-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.dash-cell{
+  grid-column:span 1;
+  background:var(--c-surface);
+  border:1px solid var(--c-border);
+  border-radius:var(--radius-lg);
+  padding:20px;
+  min-width:0;
+  overflow:hidden
+}
+.dash-cell.full{grid-column:1 / -1}
+.dash-cell.tall .dash-card-body{min-height:280px;display:flex;flex-direction:column;justify-content:flex-start}
+.dash-card-body{min-width:0}
+.dash-card-placeholder{
+  font-size:var(--ts-sm);color:var(--c-text-faint);font-style:italic;
+  padding:16px;text-align:center;
+  border:1px dashed var(--c-border);border-radius:var(--radius)
+}
+.dash-card-head{display:flex;align-items:center;gap:6px;margin-bottom:14px}
+.dash-card-title{
+  font-family:var(--font-display);font-size:var(--ts-base);font-weight:600;
+  color:var(--c-text);margin:0;letter-spacing:.2px
+}
+
+/* Organize mode. Every affordance lives inside .organizing, so the moment the
+   mode is off there is nothing left on the page to click by accident. */
+.dashboard.organizing .dash-cell{
+  border-color:color-mix(in oklab,var(--c-accent) 45%,var(--c-border));
+  box-shadow:0 0 0 1px color-mix(in oklab,var(--c-accent) 20%,transparent)
+}
+.dash-card-organize{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  margin:-6px -6px 14px;padding:6px 8px;
+  background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--radius)
+}
+.dash-card-name{
+  font-size:var(--ts-xs);font-weight:600;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--c-text-muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.dash-card-tools{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.dash-tool{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;padding:0;
+  background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-sm);
+  color:var(--c-text-muted);cursor:pointer;transition:var(--transition)
+}
+.dash-tool svg{width:14px;height:14px}
+.dash-tool.text{width:auto;padding:0 9px;font-size:var(--ts-xs);font-weight:600;letter-spacing:.3px}
+.dash-tool:hover:not(:disabled){color:var(--c-text);border-color:var(--c-accent)}
+.dash-tool:disabled{opacity:.35;cursor:default}
+.dash-tool.active{background:var(--c-accent-soft);border-color:var(--c-accent);color:var(--c-accent)}
+.dash-tool:focus-visible{outline:2px solid var(--c-accent);outline-offset:1px}
+.dash-tool-sep{width:1px;height:18px;background:var(--c-divider);margin:0 2px}
+/* While organizing, the organize header already names the card, so the card's
+   own title or eyebrow would read as the same words twice in a row. */
+.dashboard.organizing .dash-eyebrow,
+.dashboard.organizing .dash-card-head{display:none}
+
+.dash-hidden-tray{
+  margin-top:20px;padding:16px;
+  background:var(--c-surface-2);border:1px dashed var(--c-border);border-radius:var(--radius-lg)
+}
+.dash-hidden-title{
+  font-size:var(--ts-xs);font-weight:600;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--c-text-muted);margin-bottom:10px
+}
+.dash-hidden-empty{font-size:var(--ts-sm);color:var(--c-text-faint);margin:0}
+.dash-hidden-list{display:flex;flex-wrap:wrap;gap:8px}
+.dash-hidden-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 12px;font-size:var(--ts-sm);
+  background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-full);
+  color:var(--c-text);cursor:pointer;transition:var(--transition)
+}
+.dash-hidden-chip svg{width:13px;height:13px;color:var(--c-accent)}
+.dash-hidden-chip:hover{border-color:var(--c-accent);background:var(--c-accent-soft)}
+.dash-hidden-chip:focus-visible{outline:2px solid var(--c-accent);outline-offset:1px}
+
+/* Continue writing */
+.dash-continue{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.dash-continue-info{min-width:0;display:flex;flex-direction:column;gap:6px}
+.dash-eyebrow{
+  font-size:var(--ts-xs);font-weight:600;text-transform:uppercase;letter-spacing:.7px;
+  color:var(--c-accent)
+}
+.dash-continue-name{
+  font-family:var(--font-display);font-size:var(--ts-xl);font-weight:600;color:var(--c-text);
+  overflow-wrap:anywhere
+}
+.dash-badges{display:flex;flex-wrap:wrap;gap:6px}
+
+/* Stat rows and streak */
+.stat-rows{display:flex;flex-direction:column}
+.stat-row{
+  display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  padding:9px 0;border-bottom:1px solid var(--c-divider)
+}
+.stat-row:last-child{border-bottom:none}
+.stat-row-label{font-size:var(--ts-sm);color:var(--c-text-muted)}
+.stat-row-value{
+  font-family:var(--font-mono);font-size:var(--ts-base);color:var(--c-text);
+  font-variant-numeric:tabular-nums
+}
+.stat-row.strong .stat-row-label{color:var(--c-text);font-weight:600}
+.stat-row.strong .stat-row-value{font-size:var(--ts-lg);font-weight:600;color:var(--c-accent)}
+
+.streak-block{display:flex;align-items:center;gap:16px}
+.streak-flame{width:44px;height:44px;flex-shrink:0;color:var(--c-text-faint)}
+.streak-block.lit .streak-flame{color:var(--c-warning)}
+.streak-text{min-width:0}
+.streak-num{
+  font-family:var(--font-display);font-size:var(--ts-xl);font-weight:700;color:var(--c-text);
+  display:flex;align-items:baseline;gap:6px
+}
+.streak-unit{font-family:var(--font-body);font-size:var(--ts-sm);font-weight:500;color:var(--c-text-muted)}
+.streak-note{font-size:var(--ts-xs);color:var(--c-text-muted);margin-top:2px}
+.streak-best{
+  margin-top:14px;padding-top:12px;border-top:1px solid var(--c-divider);
+  font-size:var(--ts-xs);color:var(--c-text-faint)
+}
+.split-bar{
+  display:flex;height:6px;margin-top:14px;overflow:hidden;
+  background:var(--c-surface-2);border-radius:var(--radius-full)
+}
+.split-fill{display:block;height:100%;background:var(--c-accent);border-radius:var(--radius-full)}
+.split-note{margin:8px 0 0;font-size:var(--ts-xs);color:var(--c-text-muted)}
+
+/* Project goals */
+.pg-empty{margin:0;font-size:var(--ts-sm);color:var(--c-text-muted)}
+.pg-list{display:flex;flex-direction:column;gap:12px}
+.pg-row{
+  padding:14px;border:1px solid var(--c-border);border-radius:var(--radius);
+  background:var(--c-surface-2)
+}
+.pg-row.done{border-color:var(--c-success)}
+.pg-row.overdue{border-color:var(--c-warning)}
+.pg-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.pg-name{
+  padding:0;border:none;background:none;cursor:pointer;text-align:left;
+  font-family:var(--font-display);font-size:var(--ts-base);font-weight:600;
+  color:var(--c-text);transition:var(--transition)
+}
+.pg-name:hover{color:var(--c-accent)}
+.pg-name:focus-visible{outline:2px solid var(--c-accent);outline-offset:2px;border-radius:var(--radius-sm)}
+.pg-fields{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.pg-field{display:flex;flex-direction:column;gap:4px}
+.pg-field-label{
+  font-size:var(--ts-xs);color:var(--c-text-faint);
+  text-transform:uppercase;letter-spacing:.5px
+}
+.pg-input{
+  padding:6px 8px;width:132px;
+  background:var(--c-panel);border:1px solid var(--c-border);border-radius:var(--radius-sm);
+  color:var(--c-text);font-family:var(--font-mono);font-size:var(--ts-xs);
+  font-variant-numeric:tabular-nums
+}
+/* Date fields need room for the browser's own calendar button on top of the
+   full date, which a shared width leaves no space for. */
+.pg-input[type="date"]{width:168px}
+.pg-input:focus{outline:none;border-color:var(--c-accent)}
+.pg-hint{margin:0;font-size:var(--ts-xs);color:var(--c-text-muted)}
+.pg-facts{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px}
+.pg-fact{font-size:var(--ts-xs);color:var(--c-text-muted);font-variant-numeric:tabular-nums}
+.pg-fact strong{color:var(--c-text);font-family:var(--font-mono);font-weight:600}
+.pg-done-group{margin-top:16px;padding-top:14px;border-top:1px solid var(--c-divider)}
+.pg-group-title{
+  display:flex;align-items:center;gap:6px;margin-bottom:10px;
+  font-size:var(--ts-xs);color:var(--c-text-faint);
+  text-transform:uppercase;letter-spacing:.5px
+}
+.pg-count{
+  padding:1px 7px;border-radius:var(--radius-full);
+  background:var(--c-accent-soft);color:var(--c-accent);
+  font-family:var(--font-mono);letter-spacing:0
+}
+
+/* Charts ------------------------------------------------------------------
+   The bar graph and heatmap are inline SVG, so they inherit theme tokens the
+   same way the rest of the interface does. No colour is written literally here. */
+.chart-controls{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.chart-range{
+  padding:5px 11px;font-size:var(--ts-xs);font-weight:600;
+  background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--radius-full);
+  color:var(--c-text-muted);cursor:pointer;transition:var(--transition)
+}
+.chart-range:hover{color:var(--c-text);border-color:var(--c-accent)}
+.chart-range.active{background:var(--c-accent-soft);border-color:var(--c-accent);color:var(--c-accent)}
+.chart-range:focus-visible{outline:2px solid var(--c-accent);outline-offset:1px}
+
+.chart-summary{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:12px}
+.chart-stat{display:flex;flex-direction:column;gap:1px;min-width:0}
+.chart-stat-num{
+  font-family:var(--font-mono);font-size:var(--ts-lg);font-weight:600;color:var(--c-text);
+  font-variant-numeric:tabular-nums;line-height:1.1
+}
+.chart-stat-label{
+  font-size:var(--ts-xs);color:var(--c-text-muted);
+  text-transform:uppercase;letter-spacing:.5px
+}
+
+.chart-readout{
+  font-size:var(--ts-xs);color:var(--c-text-muted);
+  min-height:1.4em;margin-bottom:8px;
+  font-variant-numeric:tabular-nums
+}
+.chart-svg{display:block;width:100%;height:auto;overflow:visible}
+/* The heatmap has a fixed grid of squares, so it is capped rather than stretched
+   across a wide card, which would blow the squares and labels up with it. */
+.heatmap-svg{display:block;width:100%;max-width:440px;height:auto;overflow:visible}
+.chart-grid{stroke:var(--c-divider);stroke-width:1}
+.chart-baseline{stroke:var(--c-border);stroke-width:1.5}
+.chart-axis-label{fill:var(--c-text-faint);font-size:11px;font-family:var(--font-body)}
+.chart-value{
+  fill:var(--c-text-muted);font-size:11px;font-family:var(--font-mono);
+  font-variant-numeric:tabular-nums
+}
+.chart-bar{fill:var(--c-accent);transition:fill .15s ease}
+.chart-hit{fill:transparent}
+.chart-bar-group{cursor:default}
+.chart-bar-group:focus{outline:none}
+.chart-bar-group.active .chart-bar,
+.chart-bar-group:focus-visible .chart-bar{fill:var(--c-accent-hover)}
+.chart-bar-group.active .chart-value{fill:var(--c-text)}
+
+.chart-empty{
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  padding:28px 16px;text-align:center;
+  border:1px dashed var(--c-border);border-radius:var(--radius)
+}
+.chart-empty svg{width:28px;height:28px;color:var(--c-text-faint)}
+.chart-empty p{margin:0;font-size:var(--ts-sm);color:var(--c-text-muted);max-width:38ch}
+
+/* Heatmap intensity is the accent colour at graded opacity, so every theme gets
+   a matching ramp for free. */
+.heat-cell,.heat-swatch{fill:var(--c-accent);background:var(--c-accent)}
+.heat-0{fill:var(--c-surface-2);background:var(--c-surface-2)}
+.heat-1{opacity:.28}
+.heat-2{opacity:.5}
+.heat-3{opacity:.74}
+.heat-4{opacity:1}
+.heat-group{cursor:default}
+.heat-group:focus{outline:none}
+.heat-group.active .heat-cell,
+.heat-group:focus-visible .heat-cell{stroke:var(--c-text);stroke-width:1.5}
+.heat-legend{display:flex;align-items:center;gap:5px;margin-top:12px}
+.heat-legend-label{font-size:var(--ts-xs);color:var(--c-text-faint)}
+.heat-swatch{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+/* Goals */
+.goal-list{display:flex;flex-direction:column;gap:14px}
+.goal-row-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.goal-label{
+  display:flex;align-items:baseline;gap:8px;min-width:0;
+  font-size:var(--ts-sm);font-weight:600;color:var(--c-text)
+}
+.goal-period{
+  font-size:var(--ts-xs);font-weight:400;color:var(--c-text-faint);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.goal-row.met .goal-pct{color:var(--c-success)}
+.goal-numbers{
+  display:flex;align-items:center;gap:6px;
+  font-family:var(--font-mono);font-size:var(--ts-xs);color:var(--c-text-muted);
+  font-variant-numeric:tabular-nums
+}
+.goal-current{color:var(--c-text)}
+.goal-sep{color:var(--c-text-faint)}
+.goal-target{
+  /* Wide enough for a six-figure yearly target without clipping the last digit. */
+  width:92px;background:var(--c-surface-2);border:1px solid var(--c-border);
+  border-radius:var(--radius-sm);padding:3px 6px;
+  font-family:var(--font-mono);font-size:var(--ts-xs);color:var(--c-text);text-align:right
+}
+.goal-target:focus{outline:none;border-color:var(--c-accent);box-shadow:0 0 0 2px var(--c-accent-soft)}
+.goal-pct{min-width:38px;text-align:right;color:var(--c-accent);font-weight:600}
+
+/* The profile card predates the dashboard grid and carries its own surface,
+   border and bottom margin. Inside a grid cell that would read as a box in a
+   box, so it flattens and lets the cell provide the chrome. */
+.dash-cell .dashboard-profile-card,
+:root[data-theme] .dash-cell .dashboard-profile-card{
+  background:none;border:none;border-radius:0;padding:0;margin-bottom:0
+}
+
 /* Dashboard Profile Card */
 .dashboard-profile-card{
   background:var(--c-surface-2);
@@ -491,7 +1120,7 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
   margin-bottom:20px;
   overflow:hidden
 }
-[data-theme="aurora"] .dashboard-profile-card{
+:root[data-theme] .dashboard-profile-card{
   background:linear-gradient(135deg,color-mix(in oklab,var(--c-accent) 8%,var(--c-surface-2)),var(--c-surface-2));
   border-color:color-mix(in oklab,var(--c-accent) 20%,var(--c-border))
 }
@@ -506,13 +1135,13 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 }
 .profile-avatar img{width:100%;height:100%;object-fit:cover}
 .profile-name{
-  font-family:'Cinzel',var(--font-display);
+  font-family:var(--font-display);
   font-size:var(--ts-xl);font-weight:700;
   margin-bottom:4px;
   line-height:1.2
 }
-[data-theme="aurora"] .profile-name{
-  background:linear-gradient(135deg,#6366F1,#8B5CF6,#EC4899);
+:root[data-theme] .profile-name{
+  background:linear-gradient(135deg,var(--c-brand-1),var(--c-brand-2),var(--c-brand-3));
   -webkit-background-clip:text;
   background-clip:text;
   -webkit-text-fill-color:transparent
@@ -697,6 +1326,18 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
   border:1px solid var(--c-border)
 }
 
+/* --- Export groups ---
+   Shared by the Export tool tabs and the Export Project dialog, which all build
+   their markup from the same export registry. */
+.export-group{margin-bottom:12px}
+.export-group-title{font-weight:600;margin-bottom:6px}
+.export-group-note{font-size:var(--ts-sm);color:var(--c-text-muted);line-height:1.55;margin-bottom:10px}
+.export-group-select{margin-bottom:8px}
+.export-group-actions{display:flex;gap:8px;flex-wrap:wrap}
+.export-intro{color:var(--c-text-muted);font-size:var(--ts-sm);line-height:1.6;margin-bottom:16px}
+/* Inside the dialog the groups are the whole body, so drop the trailing gap. */
+.export-groups .export-group:last-child{margin-bottom:0}
+
 /* ============================================
    ADAPTIVE LAYOUT & DENSITY
    One source of truth for how the app reflows across window sizes,
@@ -771,6 +1412,8 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 
 /* --- Compact: phones and very small windows --- */
 @media (max-width:759px){
+  .theme-grid{grid-template-columns:1fr}
+  .theme-option{min-height:var(--tap)}
   :root{--gutter:12px;--topbar-h:52px}
   .topbar{padding:0 8px;padding-left:calc(8px + var(--safe-l));padding-right:calc(8px + var(--safe-r));gap:4px}
   .topbar-title{font-size:var(--ts-xs);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -790,6 +1433,24 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
   .toast{max-width:calc(100vw - 24px)}
   .profile-card-stats{flex-wrap:wrap;gap:12px}
   .dashboard-profile-card{padding:16px}
+  /* One column on phones: a saved half-width preference is ignored here rather
+     than producing two unreadable slivers. The preference is not overwritten,
+     so the wider layout returns on a larger screen. */
+  .dash-grid{grid-template-columns:minmax(0,1fr);gap:12px}
+  .dash-cell,.dash-cell.half,.dash-cell.full{grid-column:1 / -1}
+  /* Paired with the narrower phone viewBox in the chart renderer: both together
+     land the labels near the same rendered size as on a desktop card. */
+  .chart-axis-label,.chart-value{font-size:14px}
+  .chart-summary{gap:18px}
+  .dash-cell{padding:16px;border-radius:var(--radius)}
+  .dash-cell.tall .dash-card-body{min-height:0}
+  .dash-bar{align-items:flex-start}
+  .dash-bar-actions{width:100%}
+  .dash-bar-actions .btn{flex:1}
+  .dash-card-organize{margin:-4px -4px 12px;gap:8px}
+  .dash-card-tools{width:100%;justify-content:flex-start}
+  .dash-continue{gap:14px}
+  .dash-continue .btn{width:100%}
   .book-page p:first-of-type:first-letter{font-size:2.2em}
   .stats-table{display:block;overflow-x:auto}
 }
@@ -810,11 +1471,34 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 /* --- Touch / coarse pointer: bigger targets, no accidental iOS zoom --- */
 @media (hover:none) and (pointer:coarse){
   .nav-item,.ws-nav-item,.chapter-item,.lore-entry-item,.lore-folder,.playtest-choice{min-height:var(--tap);align-items:center}
-  .topbar-btn,.editor-toolbar .tb-btn{width:var(--tap);height:var(--tap)}
+  .info-icon,.topbar-btn,.switch,.editor-toolbar .tb-btn,.canvas-toolbar .tb-btn{width:var(--tap);height:var(--tap)}
+  .switch .track{width:44px;height:26px;inset:auto;top:50%;left:50%;transform:translate(-50%,-50%)}
   .btn{padding:10px 16px;min-height:var(--tap)}
-  .btn.sm{padding:8px 12px;min-height:36px}
+  .btn.sm{padding:8px 12px;min-height:var(--tap)}
+  .btn.icon,.btn.icon.sm{min-width:var(--tap);min-height:var(--tap)}
+  .menu-trigger{min-width:var(--tap);min-height:var(--tap)}
+  .menu-item{min-height:var(--tap)}
+  /* Organize mode has to be usable with a thumb, so its small icon buttons grow
+     to the same tap floor as everything else on a touch device. */
+  .dash-tool{min-width:var(--tap);min-height:var(--tap);width:auto;height:auto;padding:0 8px}
+  .dash-tool.text{padding:0 14px}
+  .dash-tool svg{width:16px;height:16px}
+  .dash-hidden-chip{min-height:var(--tap)}
+  .chart-range{min-height:var(--tap);padding:0 16px}
+  .heat-legend-label{font-size:var(--ts-sm)}
+  .goal-target{min-height:var(--tap);font-size:16px;width:88px}
+  .pg-input,.pg-input[type="date"]{min-height:var(--tap);font-size:16px;width:100%}
+  .pg-field{flex:1 1 140px}
+  .pg-name{min-height:var(--tap);display:flex;align-items:center}
+  .workspace-topbar .form-select{min-height:var(--tap);font-size:16px}
   /* 16px minimum prevents Safari/Chrome from zooming when a field is focused. */
   .form-input,.form-textarea,.form-select,.search-box input{font-size:max(16px,var(--ts-sm))}
+  input,textarea,select{font-size:16px!important}
+  .editor-toolbar select{font-size:16px}
+  .stats-table input,.stats-table select{min-height:var(--tap);font-size:16px}
+  input[data-goal]{min-height:var(--tap);font-size:16px!important}
+  .chapter-ill-remove{width:var(--tap);height:var(--tap);padding:0;background:transparent;font-size:16px}
+  .chip{min-height:var(--tap);margin:4px}
   .editor-surface,.content,.chapter-list-items{-webkit-overflow-scrolling:touch}
   .card.hoverable:hover{transform:none;box-shadow:none}
   ::-webkit-scrollbar{width:10px;height:10px}
@@ -844,8 +1528,10 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 /* --- Brand mark legibility ---
    logo.png is white line-art, so it disappears on the light themes; recolour it
    to the theme's accent instead of shipping a second bitmap. */
-[data-theme="light"] .sidebar-logo img,
-[data-theme="fantasy-light"] .sidebar-logo img{
+:root[data-theme="light"] .sidebar-logo img,
+:root[data-theme="fantasy-light"] .sidebar-logo img,
+:root[data-theme="sakura"] .sidebar-logo img,
+:root[data-theme="moss"] .sidebar-logo img{
   filter:brightness(0) saturate(100%) drop-shadow(0 0 1px rgba(0,0,0,.15))
 }
 
@@ -930,13 +1616,6 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 /* Hidden by default — this is a phone-only control. */
 .mobile-tabbar{display:none}
 
-/* --- Kill hover affordances on touch ---------------------------------------
-   The tooltip layer is only wired up on hover-capable devices (see core.js),
-   but belt-and-braces: never let it paint over the UI on a touch screen. */
-@media (hover:none),(pointer:coarse),(max-width:759px){
-  .tooltip{display:none!important}
-}
-
 /* ==========================================================================
    COMPACT / PHONE
    ========================================================================== */
@@ -944,9 +1623,9 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 
   /* --- Tokens tuned for a hand-held screen ------------------------------- */
   :root{
-    --gutter:14px;
-    --topbar-h:54px;
-    --tap:46px;
+    --gutter:16px;
+    --topbar-h:56px;
+    --tap:48px;
     /* Fixed sizes, not viewport-derived clamps: on a 390px screen the desktop
        clamps collapse to their minimums and everything reads as cramped. */
     --ts-xs:.8125rem;
@@ -957,7 +1636,14 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
     --radius:10px;
     --radius-lg:16px;
   }
-  body{font-size:var(--ts-base);line-height:1.55}
+  body{font-size:var(--ts-base);line-height:1.6}
+
+  /* Info icons get a genuine finger-sized hit area on a phone (the visible
+     glyph stays small, but the tappable square grows to meet --tap). */
+  .info-icon{min-width:var(--tap);min-height:var(--tap);width:var(--tap);height:var(--tap);font-size:.8rem}
+
+  /* Tool-tab chips in the workspace rail are tall enough to thumb reliably. */
+  .ws-nav-item{min-height:48px}
 
   /* --- 1. Left drawer out, bottom tab bar in ----------------------------- */
   #app > .sidebar,
@@ -1021,7 +1707,7 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
     flex:1 1 auto;min-width:0;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
-  .topbar-btn{width:40px;height:40px;border-radius:var(--radius);flex-shrink:0}
+  .topbar-btn{width:var(--tap);height:var(--tap);border-radius:var(--radius);flex-shrink:0}
   .topbar-btn svg{width:19px;height:19px}
   /* Save state shrinks to a single dot; the word "Saved" is redundant. */
   .save-status{flex-shrink:0;padding-right:2px}
@@ -1070,17 +1756,17 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 
   /* --- 5. Controls: real touch targets ---------------------------------- */
   .btn{min-height:var(--tap);padding:11px 16px;font-size:var(--ts-sm)}
-  .btn.sm{min-height:38px;padding:8px 13px}
+  .btn.sm{min-height:var(--tap);padding:8px 13px}
   .btn.block{width:100%}
   /* Icon buttons are sized inline in px by the views. The mobile min-height and
      padding above would stretch them into empty slivers that clip their glyph,
      so force a genuine square tap target instead. */
   .btn.icon{
-    padding:0!important;min-height:0;flex-shrink:0;
+    padding:0!important;min-width:var(--tap);min-height:var(--tap);flex-shrink:0;
     display:inline-flex;align-items:center;justify-content:center;
     width:var(--tap)!important;height:var(--tap)!important;
   }
-  .btn.icon.sm{width:38px!important;height:38px!important}
+  .btn.icon.sm{width:var(--tap)!important;height:var(--tap)!important}
   .btn.icon svg{width:18px!important;height:18px!important}
   .form-input,.form-textarea,.form-select{
     /* 16px minimum stops iOS zooming the whole page on focus. */
@@ -1089,9 +1775,11 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
     padding:10px 12px;
     width:100%;
   }
+  input,textarea,select{font-size:16px!important}
   .form-textarea{min-height:120px}
   .form-label{font-size:var(--ts-xs)}
   .chip,.tag{padding:7px 12px;font-size:var(--ts-xs)}
+  .chip{min-height:var(--tap);margin:4px}
 
   /* --- 6. Modals become bottom sheets ----------------------------------- */
   .modal-backdrop{align-items:flex-end;padding:0}
@@ -1167,7 +1855,7 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 
   /* The global top bar is pure duplication in here — the project header already
      names the project, so drop it and hand ~54px back to the writing surface.
-     Undo/redo/save move into the project header via .ws-compact-actions. */
+     File/Edit/View + save status move into the project header via .ws-menubar. */
   #app.in-workspace .main > .topbar{display:none}
 
   /* Compact project header: two tight rows instead of desktop's single wide
@@ -1188,12 +1876,11 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
     flex:1 1 90px;min-width:0;width:auto!important;
     font-size:max(16px,var(--ts-sm));font-weight:700
   }
-  .ws-compact-actions{display:flex;order:3;flex:0 0 auto;gap:2px;align-items:center}
-  .ws-compact-actions .topbar-btn{width:38px;height:38px}
-  .ws-compact-actions .topbar-btn svg{width:19px;height:19px}
+  .ws-menubar{display:flex;order:3;flex:0 0 auto;gap:1px;align-items:center}
+  .menu-trigger{min-height:var(--tap);min-width:var(--tap);padding:0 8px}
   .workspace-topbar .form-select{
     order:4;
-    flex:0 0 auto;width:auto!important;min-height:38px;font-size:var(--ts-xs)
+    flex:0 0 auto;width:auto!important;min-height:var(--tap);font-size:16px
   }
   /* Word counts share row two with the status select. */
   .workspace-topbar > div[style*="margin-left:auto"]{
@@ -1234,15 +1921,28 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
   .editor-surface .content-editable{font-size:max(16px,1.0625rem);line-height:1.7}
   .editor-toolbar{
     flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
-    scrollbar-width:none;gap:2px;padding:4px 6px
+    scrollbar-width:none;gap:6px;padding:4px 6px
   }
   .editor-toolbar::-webkit-scrollbar{display:none}
-  .editor-toolbar .tb-btn{flex:0 0 auto;width:38px;height:38px}
+  /* The toolbar holds more controls than fit on a phone. Fading the trailing
+     edge signals that the row scrolls sideways, since the scrollbar is hidden. */
+  .editor-toolbar,.workspace-sidebar,.canvas-toolbar{
+    -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 20px),transparent);
+    mask-image:linear-gradient(to right,#000 calc(100% - 20px),transparent)
+  }
+  .editor-toolbar .tb-btn{flex:0 0 auto;width:var(--tap);height:var(--tap)}
+  .editor-toolbar select{font-size:16px}
+  .canvas-toolbar .tb-btn{width:var(--tap);height:var(--tap)}
+  .stats-table input,.stats-table select{min-height:var(--tap);font-size:16px}
+  input[data-goal]{min-height:var(--tap);font-size:16px!important}
+  .chapter-ill-remove{width:var(--tap);height:var(--tap);padding:0;background:transparent;font-size:16px}
+  .menu-item{min-height:var(--tap)}
   .editor-footer{flex-wrap:wrap;row-gap:4px;font-size:var(--ts-xs)}
 
   /* Canvases (mind map, story graph, relationship map) get a usable height and
      pan/zoom rather than a squashed sliver. */
-  .canvas-container,.rel-map-container{height:62vh!important;touch-action:none}
+  .canvas-container,.rel-map-container{height:62vh!important}
+  .rel-map-container{touch-action:none}
 
   /* Playtest reads like a page, and its choices are full-width buttons. */
   .playtest-passage{font-size:1.0625rem;line-height:1.7}

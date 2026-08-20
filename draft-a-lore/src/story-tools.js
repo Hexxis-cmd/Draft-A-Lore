@@ -23,7 +23,7 @@ DAL.renderWorkspace = function(proj){
   html += '<aside class="workspace-sidebar" id="wsSidebar">';
 
   // Back button
-  html += '<div style="padding:8px 12px;border-bottom:1px solid var(--c-border)"><button class="btn sm" data-action="nav-projects" data-tip="Back to Projects">← Projects</button></div>';
+  html += '<div style="padding:8px 12px;border-bottom:1px solid var(--c-border)"><button class="btn sm" data-action="nav-projects">← Projects</button></div>';
 
   // Story Tools section
   if(proj.type === 'novel' || proj.type === 'dual'){
@@ -38,11 +38,11 @@ DAL.renderWorkspace = function(proj){
       ['illustrations','Illustrations','M21 15l-5-5L5 21 M3 3h18v18H3z M8.5 8.5a1.5 1.5 0 1 0 0 .1z'],
       ['mindmap','Mind Map','M12 2a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3z M9 12a3 3 0 0 1-3-3 M15 12a3 3 0 0 0 3-3 M12 7v5'],
       ['bookpreview','Book Preview','M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'],
-      ['export','Project Export','M12 3v12 M7 8l5-5 5 5 M5 21h14']
+      ['export','Export','M12 3v12 M7 8l5-5 5 5 M5 21h14']
     ];
     storyTools.forEach(function(t){
       var active = DAL.currentTool === t[0] ? ' active' : '';
-      html += '<div class="ws-nav-item'+active+'" data-action="ws-tool" data-tool="'+t[0]+'" data-tip="'+t[1]+'">'+(t[2]?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="'+t[2]+'"/></svg>':'')+'<span>'+t[1]+'</span></div>';
+      html += '<div class="ws-nav-item'+active+'" data-action="ws-tool" data-tool="'+t[0]+'">'+(t[2]?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="'+t[2]+'"/></svg>':'')+'<span>'+t[1]+'</span></div>';
     });
   }
 
@@ -58,7 +58,7 @@ DAL.renderWorkspace = function(proj){
     ];
     advTools.forEach(function(t){
       var active = DAL.currentTool === t[0] ? ' active' : '';
-      html += '<div class="ws-nav-item'+active+'" data-action="ws-tool" data-tool="'+t[0]+'" data-tip="'+t[1]+'">'+(t[2]?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="'+t[2]+'"/></svg>':'')+'<span>'+t[1]+'</span></div>';
+      html += '<div class="ws-nav-item'+active+'" data-action="ws-tool" data-tool="'+t[0]+'">'+(t[2]?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="'+t[2]+'"/></svg>':'')+'<span>'+t[1]+'</span></div>';
     });
   }
 
@@ -67,27 +67,29 @@ DAL.renderWorkspace = function(proj){
   // Workspace topbar + main
   html += '<div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0">';
   html += '<div class="workspace-topbar">'+
-    '<button class="btn sm" data-action="nav-projects" data-tip="Back to Projects">← Back</button>'+
-    /* On phones the global top bar is hidden inside the workspace so the
-       writing surface gets that height back, so undo/redo and the save
-       indicator travel with the project header instead. */
-    '<div class="ws-compact-actions">'+
-      '<button class="topbar-btn" data-action="undo" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>'+
-      '<button class="topbar-btn" data-action="redo" aria-label="Redo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>'+
-      '<div class="save-status"><div class="save-dot"></div></div>'+
+    '<button class="btn sm" data-action="nav-projects">← Back</button>'+
+    /* File/Edit/View menu bar — workspace only. It carries Save, Save As,
+       Import/Export, Undo/Redo and view options, replacing the old loose
+       Save/Undo/Redo cluster. On phones the global top bar is hidden inside
+       the workspace so this header becomes the single control surface. */
+    '<div class="ws-menubar">'+
+      '<button class="menu-trigger" data-action="open-menu" data-menu="file">File<span class="menu-caret">▾</span></button>'+
+      '<button class="menu-trigger" data-action="open-menu" data-menu="edit">Edit<span class="menu-caret">▾</span></button>'+
+      '<button class="menu-trigger" data-action="open-menu" data-menu="view">View<span class="menu-caret">▾</span></button>'+
+      '<div class="save-status" title="Saved on this device"><div class="save-dot"></div><span>Saved</span></div>'+
     '</div>'+
-    '<input class="form-input" style="width:auto;font-weight:600" id="projNameInput" value="'+DAL.escapeHtml(proj.name)+'" data-tip="Click to rename">'+
+    '<input class="form-input" style="width:auto;font-weight:600" id="projNameInput" value="'+DAL.escapeHtml(proj.name)+'">'+
     '<select class="form-select" style="width:auto;font-size:var(--ts-xs)" data-action="change-status" data-pid="'+proj.id+'">'+
       ['development','drafting','proofreading','completed','published'].map(function(s){ return '<option value="'+s+'"'+(proj.status===s?' selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>'; }).join('')+
     '</select>'+
     '<div style="margin-left:auto;display:flex;gap:8px;align-items:center;font-size:var(--ts-xs);color:var(--c-text-muted)">'+
-      '<span data-tip="Manuscript / Supplementary / Total words"><strong style="color:var(--c-text)">'+wc.manuscript+'</strong> / <strong style="color:var(--c-text)">'+wc.supplementary+'</strong> / <strong style="color:var(--c-text)">'+wc.total+'</strong> words</span>'+
-      '<span data-tip="Today word count">Today: <strong style="color:var(--c-accent)">'+(daily.manuscript+daily.supplementary)+'</strong></span>'+
-      '<div class="sync-dot '+(DAL.folderHandles[proj.id]?'linked':'unlinked')+'" data-tip="'+(DAL.folderHandles[proj.id]?'Folder linked':'No folder linked')+'"></div>'+
+      '<span><strong style="color:var(--c-text)">'+wc.manuscript+'</strong> / <strong style="color:var(--c-text)">'+wc.supplementary+'</strong> / <strong style="color:var(--c-text)">'+wc.total+'</strong> words</span>'+
+      '<span>Today: <strong style="color:var(--c-accent)">'+(daily.manuscript+daily.supplementary)+'</strong></span>'+
+      '<div class="sync-dot '+(DAL.folderHandles[proj.id]?'linked':'unlinked')+'"></div>'+
       /* Folder sync needs the File System Access API, which mobile browsers
          don't implement — so the control is hidden rather than offered and
          then refused. */
-      '<button class="btn sm ws-folder-btn" data-action="link-folder" data-pid="'+proj.id+'" data-tip="Link or relink folder">Link Folder</button>'+
+      '<button class="btn sm ws-folder-btn" data-action="link-folder" data-pid="'+proj.id+'">Link Folder</button>'+
     '</div></div>';
 
   // Main content
@@ -164,16 +166,18 @@ DAL.renderOverview = function(proj){
   '</div>';
 
   // Word counts
-  html += '<div class="card" style="margin-bottom:16px;display:flex;gap:16px;justify-content:center;text-align:center">'+
+  html += '<div class="card" style="margin-bottom:16px;text-align:center">'+
+    '<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:10px;font-size:var(--ts-xs);color:var(--c-text-muted);text-transform:uppercase;letter-spacing:.4px">Word Counts '+DAL.infoIcon('Manuscript = words in your chapters and adventure nodes (the actual story). Supplementary = words in characters, lore and plot threads. Total = both combined. Daily goals and writing streaks track the manuscript count.')+'</div>'+
+    '<div style="display:flex;gap:16px;justify-content:center">'+
     '<div><div style="font-size:var(--ts-lg);font-weight:700">'+wc.manuscript+'</div><div style="font-size:var(--ts-xs);color:var(--c-text-muted)">Manuscript</div></div>'+
     '<div><div style="font-size:var(--ts-lg);font-weight:700">'+wc.supplementary+'</div><div style="font-size:var(--ts-xs);color:var(--c-text-muted)">Supplementary</div></div>'+
     '<div><div style="font-size:var(--ts-lg);font-weight:700;color:var(--c-accent)">'+wc.total+'</div><div style="font-size:var(--ts-xs);color:var(--c-text-muted)">Total</div></div>'+
-  '</div>';
+    '</div></div>';
 
   // Stale plots
   if(stalePlots.length){
     html += '<div class="card" style="margin-bottom:16px;border-left:3px solid var(--c-warning)">'+
-      '<div style="font-weight:600;color:var(--c-warning);margin-bottom:8px">⚠ Stale Plot Threads</div>';
+      '<div style="display:flex;align-items:center;gap:6px;font-weight:600;color:var(--c-warning);margin-bottom:8px">⚠ Stale Plot Threads '+DAL.infoIcon('A plot thread is marked stale when it hasn\'t been edited in 30+ days, so abandoned storylines don\'t quietly slip through the cracks. Open a thread and edit it to reset the timer.')+'</div>';
     stalePlots.forEach(function(p){
       html += '<div style="font-size:var(--ts-sm);padding:2px 0">'+DAL.escapeHtml(p.title)+' — untouched '+DAL.formatDate(p.lastTouched||p.createdAt)+'</div>';
     });
@@ -186,7 +190,7 @@ DAL.renderOverview = function(proj){
   if(proj.type === 'dual') tools = ['manuscript','characters','illustrations','storygraph','stats','items','playtest'];
   tools.forEach(function(t){
     var labels = {manuscript:'Manuscript',characters:'Characters',relationships:'Relationships',plots:'Plot Threads',lore:'Lore',illustrations:'Illustrations',mindmap:'Mind Map',bookpreview:'Book Preview',export:'Export',storygraph:'Story Graph',stats:'Stats & Traits',items:'Items',playtest:'Playthrough'};
-    html += '<div class="quick-link" data-action="ws-tool" data-tool="'+t+'" data-tip="Go to '+labels[t]+'">'+labels[t]+'</div>';
+    html += '<div class="quick-link" data-action="ws-tool" data-tool="'+t+'">'+labels[t]+'</div>';
   });
   html += '</div></div>';
 
@@ -214,13 +218,13 @@ DAL.renderManuscript = function(proj){
   var html = '<div class="manuscript-layout" style="height:calc(var(--app-h,100dvh) - var(--topbar-h) - 52px)">';
   // Chapter list
   html += '<div class="chapter-list">'+
-    '<div class="chapter-list-header"><span style="font-size:var(--ts-xs);font-weight:600;text-transform:uppercase;color:var(--c-text-muted)">Chapters</span><button class="btn sm primary" data-action="add-chapter" data-tip="Add a new chapter">+</button></div>'+
+    '<div class="chapter-list-header"><span style="font-size:var(--ts-xs);font-weight:600;text-transform:uppercase;color:var(--c-text-muted)">Chapters</span><button class="btn sm primary" data-action="add-chapter">+</button></div>'+
     '<div class="chapter-list-items" id="chapterList">';
   proj.chapters.forEach(function(ch, i){
     var active = ch.id === DAL.selectedChapterId ? ' active' : '';
     var wc = DAL.countWords(ch.contentHTML);
-    html += '<div class="chapter-item'+active+'" data-action="select-chapter" data-cid="'+ch.id+'" data-tip="'+wc+' words">'+
-      '<span class="drag-handle" data-action="reorder-chapter" data-cid="'+ch.id+'" data-tip="Drag to reorder">⋮⋮</span>'+
+    html += '<div class="chapter-item'+active+'" data-action="select-chapter" data-cid="'+ch.id+'">'+
+      '<span class="drag-handle" data-action="reorder-chapter" data-cid="'+ch.id+'">⋮⋮</span>'+
       '<span>'+(i+1)+'. '+DAL.escapeHtml(ch.title)+'</span>'+
     '</div>';
   });
@@ -233,14 +237,14 @@ DAL.renderManuscript = function(proj){
   html += '<div class="editor-area">';
   html += '<div class="editor-toolbar" id="editorToolbar">';
   // Block format
-  html += '<select data-action="format-block" data-tip="Block format"><option value="p">Body Text</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="h3">Subheading</option></select>';
+  html += '<select data-action="format-block"><option value="p">Body Text</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="h3">Subheading</option></select>';
   // Font family
   var fonts = DAL.getFontList();
-  html += '<select data-action="font-family" data-tip="Font family" style="width:100px">';
+  html += '<select data-action="font-family" style="width:100px">';
   fonts.forEach(function(f){ html += '<option value="'+f+'">'+f+'</option>'; });
   html += '</select>';
   // Font size
-  html += '<select data-action="font-size" data-tip="Font size" style="width:50px">';
+  html += '<select data-action="font-size" style="width:50px">';
   [12,14,16,18,20,24,28,32].forEach(function(s){ html += '<option value="'+s+'">'+s+'</option>'; });
   html += '</select>';
   html += '<span class="tb-sep"></span>';
@@ -251,21 +255,21 @@ DAL.renderManuscript = function(proj){
     ['underline','<u>U</u>','Underline'],
     ['strikeThrough','<s>S</s>','Strikethrough']
   ];
-  fmtBtns.forEach(function(b){ html += '<button class="tb-btn" data-action="format-cmd" data-cmd="'+b[0]+'" data-tip="'+b[2]+'">'+b[1]+'</button>'; });
+  fmtBtns.forEach(function(b){ html += '<button class="tb-btn" data-action="format-cmd" data-cmd="'+b[0]+'">'+b[1]+'</button>'; });
   html += '<span class="tb-sep"></span>';
-  html += '<input type="color" data-action="text-color" data-tip="Text color" style="width:24px;height:24px;border:none;cursor:pointer">';
+  html += '<input type="color" data-action="text-color" style="width:24px;height:24px;border:none;cursor:pointer">';
   html += '<span class="tb-sep"></span>';
   var aligns = [['justifyLeft','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>','Align Left'],['justifyCenter','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>','Center'],['justifyRight','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg>','Right'],['justifyFull','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>','Justify']];
-  aligns.forEach(function(a){ html += '<button class="tb-btn" data-action="format-cmd" data-cmd="'+a[0]+'" data-tip="'+a[2]+'">'+a[1]+'</button>'; });
+  aligns.forEach(function(a){ html += '<button class="tb-btn" data-action="format-cmd" data-cmd="'+a[0]+'">'+a[1]+'</button>'; });
   html += '<span class="tb-sep"></span>';
-  html += '<button class="tb-btn" data-action="format-cmd" data-cmd="insertUnorderedList" data-tip="Bullet list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg></button>';
-  html += '<button class="tb-btn" data-action="format-cmd" data-cmd="insertOrderedList" data-tip="Numbered list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4 M4 10h2 M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></button>';
-  html += '<button class="tb-btn" data-action="insert-image" data-tip="Insert image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></button>';
-  html += '<button class="tb-btn" data-action="insert-hr" data-tip="Horizontal rule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="4" y1="12" x2="20" y2="12"/></svg></button>';
+  html += '<button class="tb-btn" data-action="format-cmd" data-cmd="insertUnorderedList"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg></button>';
+  html += '<button class="tb-btn" data-action="format-cmd" data-cmd="insertOrderedList"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4 M4 10h2 M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></button>';
+  html += '<button class="tb-btn" data-action="insert-image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></button>';
+  html += '<button class="tb-btn" data-action="insert-hr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="4" y1="12" x2="20" y2="12"/></svg></button>';
   html += '<span class="tb-sep"></span>';
-  html += '<button class="tb-btn" data-action="copy-chapter" data-tip="Copy chapter to clipboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>';
-  html += '<button class="tb-btn" data-action="export-chapter" data-tip="Export chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M12 3v12 M7 8l5-5 5 5 M5 21h14"/></svg></button>';
-  html += '<button class="tb-btn" data-action="fullscreen" data-tip="Distraction-free mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M8 3H5a2 2 0 0 0-2 2v3 M21 8V5a2 2 0 0 0-2-2h-3 M3 16v3a2 2 0 0 0 2 2h3 M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>';
+  html += '<button class="tb-btn" data-action="copy-chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>';
+  html += '<button class="tb-btn" data-action="export-chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M12 3v12 M7 8l5-5 5 5 M5 21h14"/></svg></button>';
+  html += '<button class="tb-btn" data-action="fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M8 3H5a2 2 0 0 0-2 2v3 M21 8V5a2 2 0 0 0-2-2h-3 M3 16v3a2 2 0 0 0 2 2h3 M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>';
   html += '</div>'; // end toolbar
 
   // Chapter illustrations strip
@@ -273,14 +277,14 @@ DAL.renderManuscript = function(proj){
     html += '<div class="chapter-illustrations-strip">';
     html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:var(--ts-xs);font-weight:600;text-transform:uppercase;color:var(--c-text-muted)">Chapter Illustrations</span>'+
       '<span style="font-size:var(--ts-xs);color:var(--c-text-faint)">'+((currentCh.images||[]).length)+'/2</span>'+
-      ((currentCh.images||[]).length < 2 ? '<button class="btn sm" data-action="upload-chapter-image" data-cid="'+currentCh.id+'" data-tip="Add an illustration to this chapter">+ Add Image</button>' : '')+
+      ((currentCh.images||[]).length < 2 ? '<button class="btn sm" data-action="upload-chapter-image" data-cid="'+currentCh.id+'">+ Add Image</button>' : '')+
     '</div>';
     if(currentCh.images && currentCh.images.length){
       html += '<div style="display:flex;gap:8px">';
       currentCh.images.forEach(function(img, ii){
         html += '<div class="chapter-ill-thumb">'+
           '<img src="'+img.dataUrl+'">'+
-          '<button class="chapter-ill-remove" data-action="remove-chapter-image" data-cid="'+currentCh.id+'" data-img-idx="'+ii+'" data-tip="Remove illustration">&times;</button>'+
+          '<button class="chapter-ill-remove" data-action="remove-chapter-image" data-cid="'+currentCh.id+'" data-img-idx="'+ii+'">&times;</button>'+
           '</div>';
       });
       html += '</div>';
@@ -313,13 +317,24 @@ DAL.afterStoryRender = function(proj){
         ch.updatedAt = Date.now();
         proj.updatedAt = Date.now();
         if(saveTimer) clearTimeout(saveTimer);
-        saveTimer = setTimeout(function(){ DAL.saveState(); }, 450);
+        // Manuscript typing is the one place autosave-off actually matters: with
+        // it off we don't want every keystroke hitting storage, so just mark the
+        // status dot dirty and wait for an explicit Save. Everywhere else in the
+        // app (adding a character, deleting a plot, etc.) still saves right away
+        // regardless of this toggle, since those are already deliberate clicks.
+        if(DAL.state.autosave === false){
+          DAL.setSaveStatus('unsaved');
+        } else {
+          saveTimer = setTimeout(function(){ DAL.saveState(); }, 450);
+        }
         // Update word count
         var wc = DAL.countWords(editor.innerHTML);
         var footer = editor.parentElement.parentElement.querySelector('.editor-footer span');
         if(footer) footer.textContent = wc + ' words';
       }
     });
+    editor.addEventListener('focusin', function(){ DAL._activeEditor = editor; });
+    if(document.activeElement === editor) DAL._activeEditor = editor;
   }
 
   // Bind canvas interactions if present
@@ -365,7 +380,7 @@ DAL.renderCharacters = function(proj){
   html += '<div class="char-grid">';
   proj.characters.forEach(function(c){
     var initials = (c.name||'?').split(' ').map(function(w){ return w[0]; }).join('').substring(0,2).toUpperCase();
-    html += '<div class="char-card" data-action="select-character" data-cid="'+c.id+'" data-tip="View '+DAL.escapeHtml(c.name)+'">'+
+    html += '<div class="char-card" data-action="select-character" data-cid="'+c.id+'">'+
       '<div class="char-portrait">'+(c.image?'<img src="'+c.image+'">':DAL.escapeHtml(initials))+'</div>'+
       '<div class="char-name">'+DAL.escapeHtml(c.name)+'</div>'+
       '<div class="char-role">'+DAL.escapeHtml(c.role||'')+'</div>'+
@@ -378,14 +393,14 @@ DAL.renderCharacters = function(proj){
 DAL.renderCharacterDetail = function(proj, ch){
   var charWC = DAL.countWordsText(ch.appearance)+DAL.countWordsText(ch.personality)+DAL.countWordsText(ch.backstory)+DAL.countWordsText(ch.arc);
   var html = '<div style="max-width:700px">';
-  html += '<div style="margin-bottom:16px"><button class="btn sm" data-action="back-to-characters" data-tip="Back to character list">← Back</button></div>';
+  html += '<div style="margin-bottom:16px"><button class="btn sm" data-action="back-to-characters">← Back</button></div>';
   html += '<div style="display:flex;gap:16px;margin-bottom:16px;align-items:flex-start">';
   // Portrait
   html += '<div class="char-portrait" style="width:96px;height:96px;flex-shrink:0;font-size:32px;border-radius:var(--radius-lg)">'+(ch.image?'<img src="'+ch.image+'">':DAL.escapeHtml((ch.name||'?').charAt(0).toUpperCase()))+'</div>';
   html += '<div style="flex:1"><input class="form-input" id="charName" value="'+DAL.escapeHtml(ch.name||'')+'" placeholder="Character name" style="font-size:var(--ts-lg);font-weight:700;margin-bottom:4px"></div></div>';
 
   // Portrait upload
-  html += '<div style="margin-bottom:12px"><input type="file" id="charPortrait" accept="image/*" style="display:none"><button class="btn sm" data-action="upload-portrait" data-cid="'+ch.id+'" data-tip="Upload portrait">Upload Portrait</button> '+(ch.image?'<button class="btn sm danger" data-action="remove-portrait" data-cid="'+ch.id+'">Remove</button>':'')+'</div>';
+  html += '<div style="margin-bottom:12px"><input type="file" id="charPortrait" accept="image/*" style="display:none"><button class="btn sm" data-action="upload-portrait" data-cid="'+ch.id+'">Upload Portrait</button> '+(ch.image?'<button class="btn sm danger" data-action="remove-portrait" data-cid="'+ch.id+'">Remove</button>':'')+'</div>';
 
   html += '<div class="form-row" style="margin-bottom:12px">'+
     '<div class="form-group"><label class="form-label">Role</label><input class="form-input" data-char-field="role" value="'+DAL.escapeHtml(ch.role||'')+'" placeholder="Protagonist"></div>'+
@@ -405,7 +420,7 @@ DAL.renderCharacterDetail = function(proj, ch){
     });
     html += '</div>';
   }
-  html += '<button class="btn sm" data-action="add-custom-field" data-cid="'+ch.id+'" data-tip="Add a custom field">+ Add Custom Field</button>';
+  html += '<button class="btn sm" data-action="add-custom-field" data-cid="'+ch.id+'">+ Add Custom Field</button>';
 
   // Tags
   html += '<div class="form-group" style="margin-top:12px"><label class="form-label">Tags</label><input class="form-input" data-char-field="tags" value="'+DAL.escapeHtml((ch.tags||[]).join(', '))+'" placeholder="comma, separated, tags"></div>';
@@ -440,7 +455,7 @@ DAL.renderRelationshipMap = function(proj){
     return c ? { char: c, rel: r } : null;
   }).filter(Boolean);
 
-  var html = '<div class="section-header"><div class="section-title">Relationship Map</div><button class="btn primary" data-action="add-relationship" data-tip="Add a new relationship">+ Add Relationship</button></div>';
+  var html = '<div class="section-header"><div class="section-title">Relationship Map</div><button class="btn primary" data-action="add-relationship">+ Add Relationship</button></div>';
   html += '<div style="margin-bottom:12px"><label class="form-label">Center on character</label><select class="form-select" id="relCenterSelect" style="width:auto;display:inline-block">';
   proj.characters.forEach(function(c){
     html += '<option value="'+c.id+'"'+(c.id===center.id?' selected':'')+'>'+DAL.escapeHtml(c.name)+'</option>';
@@ -463,7 +478,7 @@ DAL.renderRelationshipMap = function(proj){
     var y = 50 + Math.sin(angle) * 35;
     var colorMap = { family:'var(--c-warning)', enemy:'var(--c-danger)', ally:'var(--c-info)', friend:'var(--c-success)', rival:'var(--c-warning)' };
     var color = colorMap[item.rel.category] || 'var(--c-border)';
-    html += '<div class="rel-node connected" data-action="rel-center-on" data-cid="'+item.char.id+'" style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);border-color:'+color+'" data-tip="'+DAL.escapeHtml(item.rel.type||'relationship')+'">'+
+    html += '<div class="rel-node connected" data-action="rel-center-on" data-cid="'+item.char.id+'" style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);border-color:'+color+'">'+
       '<div style="font-weight:600;font-size:var(--ts-sm)">'+DAL.escapeHtml(item.char.name)+'</div>'+
       '<div style="font-size:var(--ts-xs);color:var(--c-text-muted)">'+DAL.escapeHtml(item.rel.type||'')+'</div></div>';
   });
@@ -505,7 +520,7 @@ DAL.renderPlotThreads = function(proj){
   if(main.length){
     main.forEach(function(p){
       var stale = (now - (p.lastTouched||p.createdAt||0)) > 30*86400000;
-      html += '<div class="plot-card" data-action="select-plot" data-pid="'+p.id+'" data-tip="View plot details">'+
+      html += '<div class="plot-card" data-action="select-plot" data-pid="'+p.id+'">'+
         '<div class="plot-status-dot '+p.status+'"></div>'+
         '<div style="flex:1"><div style="font-weight:600">'+DAL.escapeHtml(p.title)+'</div></div>'+
         (stale?'<span class="stale-warning">⚠ stale</span>':'')+
@@ -521,7 +536,7 @@ DAL.renderPlotThreads = function(proj){
   if(sub.length){
     sub.forEach(function(p){
       var stale = (now - (p.lastTouched||p.createdAt||0)) > 30*86400000;
-      html += '<div class="plot-card" data-action="select-plot" data-pid="'+p.id+'" data-tip="View plot details">'+
+      html += '<div class="plot-card" data-action="select-plot" data-pid="'+p.id+'">'+
         '<div class="plot-status-dot '+p.status+'"></div>'+
         '<div style="flex:1"><div style="font-weight:600">'+DAL.escapeHtml(p.title)+'</div></div>'+
         (stale?'<span class="stale-warning">⚠ stale</span>':'')+
@@ -539,7 +554,7 @@ DAL.renderPlotDetail = function(proj, p){
   var now = Date.now();
   var stale = (now - (p.lastTouched||p.createdAt||0)) > 30*86400000;
   var html = '<div style="max-width:700px">';
-  html += '<div style="margin-bottom:16px"><button class="btn sm" data-action="back-to-plots" data-tip="Back to plot list">← Back</button></div>';
+  html += '<div style="margin-bottom:16px"><button class="btn sm" data-action="back-to-plots">← Back</button></div>';
   html += '<input class="form-input" style="font-size:var(--ts-lg);font-weight:700;margin-bottom:12px" id="plotTitle" value="'+DAL.escapeHtml(p.title)+'" placeholder="Plot title">';
   html += '<div class="form-row" style="margin-bottom:12px">'+
     '<div class="form-group"><label class="form-label">Type</label><select class="form-select" id="plotType"><option value="main"'+(p.type==='main'?' selected':'')+'>Main Plot</option><option value="subplot"'+(p.type!=='main'?' selected':'')+'>Subplot</option></select></div>'+
@@ -569,7 +584,7 @@ DAL.renderPlotDetail = function(proj, p){
   if(stale) html += '<div class="stale-warning" style="margin-bottom:12px">⚠ This plot thread hasn\'t been touched in 30+ days</div>';
   html += '<div style="font-size:var(--ts-xs);color:var(--c-text-faint);margin-bottom:12px">Last touched: '+DAL.formatDate(p.lastTouched||p.createdAt)+'</div>';
 
-  html += '<div style="display:flex;gap:8px"><button class="btn sm" data-action="mark-reviewed" data-pid="'+p.id+'" data-tip="Reset stale timer">Mark Reviewed</button><button class="btn sm danger" data-action="delete-plot" data-pid="'+p.id+'">Delete</button></div>';
+  html += '<div style="display:flex;gap:8px"><button class="btn sm" data-action="mark-reviewed" data-pid="'+p.id+'">Mark Reviewed</button><button class="btn sm danger" data-action="delete-plot" data-pid="'+p.id+'">Delete</button></div>';
   html += '</div>';
   return html;
 };
@@ -590,13 +605,13 @@ DAL.renderLoreNotebook = function(proj){
   proj.lore.folders.forEach(function(f){
     var active = f === DAL.selectedLoreFolder ? ' active' : '';
     var count = proj.lore.entries.filter(function(e){ return e.folder === f; }).length;
-    html += '<div class="lore-folder'+active+'" data-action="select-lore-folder" data-folder="'+DAL.escapeHtml(f)+'" data-tip="'+count+' entries">'+DAL.escapeHtml(f)+' ('+count+')</div>';
+    html += '<div class="lore-folder'+active+'" data-action="select-lore-folder" data-folder="'+DAL.escapeHtml(f)+'">'+DAL.escapeHtml(f)+' ('+count+')</div>';
     // Show entries in this folder
     proj.lore.entries.filter(function(e){ return e.folder === f; }).forEach(function(e){
-      html += '<div class="lore-entry-item" data-action="select-lore-entry" data-eid="'+e.id+'" data-tip="View entry">'+DAL.escapeHtml(e.title)+'</div>';
+      html += '<div class="lore-entry-item" data-action="select-lore-entry" data-eid="'+e.id+'">'+DAL.escapeHtml(e.title)+'</div>';
     });
   });
-  html += '<div style="padding:8px 12px"><button class="btn sm" data-action="add-lore-folder" data-tip="Add a custom folder">+ Folder</button></div>';
+  html += '<div style="padding:8px 12px"><button class="btn sm" data-action="add-lore-folder">+ Folder</button></div>';
   html += '</div>';
 
   // Main area
@@ -607,7 +622,7 @@ DAL.renderLoreNotebook = function(proj){
     html += '<div class="empty-state"><h3>No Entries</h3><p>Add lore entries to this category.</p><button class="btn primary" data-action="add-lore-entry">Add Entry</button></div>';
   } else {
     entries.forEach(function(e){
-      html += '<div class="card hoverable" style="margin-bottom:8px;cursor:pointer" data-action="select-lore-entry" data-eid="'+e.id+'" data-tip="View entry"><div style="font-weight:600">'+DAL.escapeHtml(e.title)+'</div><div style="font-size:var(--ts-xs);color:var(--c-text-muted);margin-top:2px">'+(e.tags||[]).join(', ')+'</div><div style="font-size:var(--ts-xs);color:var(--c-text-faint);margin-top:2px">'+DAL.formatDate(e.updatedAt)+'</div></div>';
+      html += '<div class="card hoverable" style="margin-bottom:8px;cursor:pointer" data-action="select-lore-entry" data-eid="'+e.id+'"><div style="font-weight:600">'+DAL.escapeHtml(e.title)+'</div><div style="font-size:var(--ts-xs);color:var(--c-text-muted);margin-top:2px">'+(e.tags||[]).join(', ')+'</div><div style="font-size:var(--ts-xs);color:var(--c-text-faint);margin-top:2px">'+DAL.formatDate(e.updatedAt)+'</div></div>';
     });
   }
   html += '</div></div>';
@@ -616,7 +631,7 @@ DAL.renderLoreNotebook = function(proj){
 
 DAL.renderLoreDetail = function(proj, entry){
   var html = '<div style="max-width:700px">';
-  html += '<div style="margin-bottom:16px"><button class="btn sm" data-action="back-to-lore" data-tip="Back to lore list">← Back</button></div>';
+  html += '<div style="margin-bottom:16px"><button class="btn sm" data-action="back-to-lore">← Back</button></div>';
   html += '<input class="form-input" style="font-size:var(--ts-lg);font-weight:700;margin-bottom:12px" id="loreTitle" value="'+DAL.escapeHtml(entry.title)+'" placeholder="Entry title">';
   html += '<div class="form-group"><label class="form-label">Category</label><select class="form-select" id="loreFolder">';
   proj.lore.folders.forEach(function(f){
@@ -655,7 +670,7 @@ DAL.renderIllustrations = function(proj){
   html += '<div class="section-header"><div class="section-title">Illustrations</div>'+
     '<div style="display:flex;gap:8px">'+
     '<input type="file" id="illustrationUpload" accept="image/*" multiple style="display:none">'+
-    '<button class="btn primary" data-action="upload-illustration" data-tip="Upload images to this project">+ Upload Images</button>'+
+    '<button class="btn primary" data-action="upload-illustration">+ Upload Images</button>'+
     '</div></div>';
   html += '<p style="color:var(--c-text-muted);font-size:var(--ts-sm);margin-bottom:16px;line-height:1.6">Your project asset library. Images uploaded here belong to this project only — they won\'t appear in other stories. Use these for book covers, chapter illustrations, character portraits, item icons, and scene artwork.</p>';
 
@@ -671,13 +686,13 @@ DAL.renderIllustrations = function(proj){
       html += '<div class="illustration-card">';
       html += '<div class="illustration-thumb">'+(img.dataUrl?'<img src="'+img.dataUrl+'">':'<div class="illustration-placeholder">No image</div>')+'</div>';
       html += '<div class="illustration-info">';
-      html += '<input class="form-input illustration-name-input" value="'+DAL.escapeHtml(img.name||'')+'" data-illustration-name="'+i+'" placeholder="Image name" data-tip="Rename this image">';
+      html += '<input class="form-input illustration-name-input" value="'+DAL.escapeHtml(img.name||'')+'" data-illustration-name="'+i+'" placeholder="Image name">';
       html += '<div style="display:flex;align-items:center;gap:4px;margin-top:4px">';
-      html += '<select class="form-select illustration-category" data-illustration-category="'+i+'" style="font-size:var(--ts-xs);flex:1" data-tip="Categorize this image">';
+      html += '<select class="form-select illustration-category" data-illustration-category="'+i+'" style="font-size:var(--ts-xs);flex:1">';
       var cats = ['Cover','Chapter Art','Character','Item Icon','Scene','Other'];
       cats.forEach(function(c){ html += '<option value="'+c.toLowerCase().replace(/\s/g,'-')+'"'+(img.category===c.toLowerCase().replace(/\s/g,'-')?' selected':'')+'>'+c+'</option>'; });
       html += '</select>';
-      html += '<button class="btn sm danger" data-action="delete-illustration" data-idx="'+i+'" data-tip="Remove from library">&times;</button>';
+      html += '<button class="btn sm danger" data-action="delete-illustration" data-idx="'+i+'">&times;</button>';
       html += '</div>';
       if(img.usedIn && img.usedIn.length){
         html += '<div style="font-size:var(--ts-xs);color:var(--c-text-faint);margin-top:4px">Used in: '+DAL.escapeHtml(img.usedIn.join(', '))+'</div>';
@@ -698,16 +713,19 @@ DAL.renderMindMap = function(proj){
   var mm = proj.mindmap;
 
   var html = '<div class="canvas-toolbar">'+
-    '<button class="tb-btn" data-action="mm-add-node" data-tip="Add idea node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>'+
-    '<button class="tb-btn" data-action="mm-connect" data-tip="'+(DAL.connectMode?'Cancel connect':'Connect mode')+'" '+(DAL.connectMode?'style="background:var(--c-accent-soft);color:var(--c-accent)"':'')+'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>'+
-    '<button class="tb-btn" data-action="mm-delete-sel" data-tip="Delete selected"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg></button>'+
+    '<button class="tb-btn" data-action="mm-add-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>'+
+    '<button class="tb-btn" data-action="mm-connect" '+(DAL.connectMode?'style="background:var(--c-accent-soft);color:var(--c-accent)"':'')+'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>'+
+    '<button class="tb-btn" data-action="mm-delete-sel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg></button>'+
+    '<span class="tb-sep"></span>'+
+    DAL.canvasViewControls()+
+    '<span style="flex:1"></span>'+DAL.infoIcon('Mind Map: double-tap the canvas to add an idea node. Turn on Connect mode, then tap two nodes in order to draw a line between them. Tap a node to rename it; tap a line to remove it. Drag nodes to rearrange.')+
   '</div>';
-  html += '<div class="canvas-container" id="canvasContainer" style="height:calc(var(--app-h,100dvh) - var(--topbar-h) - 52px - 40px)"><div class="canvas-inner" id="canvasInner">';
+  html += '<div class="canvas-container" id="canvasContainer" style="height:calc(var(--app-h,100dvh) - var(--topbar-h) - 52px - 40px)"><div class="canvas-inner" id="canvasInner"><div class="canvas-stage" id="canvasStage">';
   html += '<svg class="canvas-svg" id="canvasSvg"></svg>';
   mm.nodes.forEach(function(n){
     var sel = n.id === DAL.selectedNodeId ? ' selected' : '';
     var label = n.label || 'Idea';
-    html += '<div class="canvas-node'+sel+'" data-action="mm-select" data-nid="'+n.id+'" style="left:'+(n.x||0)+'px;top:'+(n.y||0)+'px" data-tip="'+DAL.escapeHtml(label)+'">'+
+    html += '<div class="canvas-node'+sel+'" data-action="mm-select" data-nid="'+n.id+'" style="left:'+(n.x||0)+'px;top:'+(n.y||0)+'px">'+
       '<div class="canvas-node-title">'+DAL.escapeHtml(label)+'</div>'+
       (n.type?'<div class="canvas-node-badge">'+DAL.escapeHtml(n.type)+'</div>':'')+
     '</div>';
@@ -719,76 +737,332 @@ DAL.renderMindMap = function(proj){
       '<p style="margin-top:8px"><strong>Double-click</strong> the canvas to add an idea, <strong>click two nodes in Connect mode</strong> to link them, <strong>click a node</strong> to rename it, and <strong>click a line</strong> to remove it.</p>'+
     '</div>';
   }
-  html += '</div></div>';
+  html += '</div></div></div>';
   return html;
 };
 
-DAL.initCanvasInteractions = function(proj){
+/* --- Canvas: view controls, panning, zooming and node dragging -------------
+   One implementation serves both boards. Which board is on screen is decided by
+   the current tool, and the shape of the data differs (a story graph connects
+   scenes through choices, a mind map through its own edge list), but the
+   gestures, the zoom and the saved view behave identically in both.
+
+   Zoom works by scaling an inner stage. The scrollable box around it grows with
+   the scale, because a transform changes what gets drawn without changing the
+   size of anything that scrolls — without that, zooming in would put the far
+   side of the board out of reach. */
+
+// Movement below this many pixels is treated as a tap, not a drag, so a click
+// on a node is never swallowed by an accidental one-pixel wobble.
+DAL.CANVAS_DRAG_SLOP = 4;
+
+// Shared zoom + grab controls for both canvas toolbars.
+DAL.canvasViewControls = function(){
+  var proj = DAL.state && DAL.currentProjectId ? DAL.state.projects[DAL.currentProjectId] : null;
+  var zoom = proj ? DAL.canvasView(proj).zoom : 1;
+  var grab = DAL.grabMode ? ' active' : '';
+  return '<button class="tb-btn'+grab+'" data-action="sg-grab" aria-pressed="'+(DAL.grabMode?'true':'false')+'"'+
+      ' title="Grab tool — drag the board around instead of moving scenes" aria-label="Grab tool">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">'+
+      '<path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v7"/>'+
+      '<path d="M10 10.5V6a2 2 0 0 0-4 0v8"/>'+
+      '<path d="M18 8a2 2 0 0 1 4 0v6a8 8 0 0 1-8 8h-2a8 8 0 0 1-8-8v-1a2 2 0 0 1 4 0"/></svg></button>'+
+    '<button class="tb-btn" data-action="sg-zoom-out" title="Zoom out" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>'+
+    '<span class="tb-zoom" data-canvas-zoom aria-live="polite">'+Math.round(zoom*100)+'%</span>'+
+    '<button class="tb-btn" data-action="sg-zoom-in" title="Zoom in" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>'+
+    '<button class="tb-btn" data-action="sg-reset" title="Back to 100% and centre on your scenes" aria-label="Reset zoom and position"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>'+
+    '<span class="tb-sep"></span>';
+};
+
+DAL.canvasEls = function(){
   var container = document.getElementById('canvasContainer');
   var inner = document.getElementById('canvasInner');
-  var svg = document.getElementById('canvasSvg');
-  if(!container || !inner) return;
+  var stage = document.getElementById('canvasStage');
+  if(!container || !inner || !stage) return null;
+  return { container: container, inner: inner, stage: stage, svg: document.getElementById('canvasSvg') };
+};
 
-  var mm = proj.mindmap;
-  if(!mm) return;
+// The nodes and connections of whichever board is on screen.
+DAL.canvasData = function(proj){
+  if(DAL.canvasBoard() === 'storygraph') return DAL.ensureAdventure(proj);
+  if(!proj.mindmap) proj.mindmap = { nodes: [], edges: [] };
+  return proj.mindmap;
+};
 
-  // Draw edges
-  if(svg){
-    svg.innerHTML = '';
-    (mm.edges||[]).forEach(function(edge){
-      var from = mm.nodes.find(function(n){ return n.id === edge.from; });
-      var to = mm.nodes.find(function(n){ return n.id === edge.to; });
-      if(!from || !to) return;
-      var x1 = (from.x||0)+70, y1 = (from.y||0)+20;
-      var x2 = (to.x||0)+70, y2 = (to.y||0)+20;
-      var mx = (x1+x2)/2;
-      svg.innerHTML += '<path d="M'+x1+','+y1+' Q'+mx+','+((y1+y2)/2-20)+' '+x2+','+y2+'" fill="none" stroke="var(--c-border)" stroke-width="2" data-action="mm-delete-edge" data-eid="'+edge.id+'" style="pointer-events:stroke;cursor:pointer"/>';
+DAL.applyCanvasView = function(proj){
+  var els = DAL.canvasEls();
+  if(!els) return;
+  var view = DAL.canvasView(proj);
+  els.stage.style.transform = view.zoom === 1 ? '' : 'scale('+view.zoom+')';
+  els.inner.style.width = Math.round(els.stage.offsetWidth * view.zoom) + 'px';
+  els.inner.style.height = Math.round(els.stage.offsetHeight * view.zoom) + 'px';
+  var label = document.querySelector('[data-canvas-zoom]');
+  if(label) label.textContent = Math.round(view.zoom * 100) + '%';
+};
+
+// Scrolling is how the canvas is panned, so the saved position is a scroll
+// offset. Writing it back is guarded because restoring it fires scroll events of
+// its own, which would otherwise overwrite what we are in the middle of applying.
+DAL._canvasRestoring = false;
+
+DAL.restoreCanvasScroll = function(proj){
+  var els = DAL.canvasEls();
+  if(!els) return;
+  var view = DAL.canvasView(proj);
+  DAL._canvasRestoring = true;
+  els.container.scrollLeft = view.scrollX;
+  els.container.scrollTop = view.scrollY;
+  setTimeout(function(){ DAL._canvasRestoring = false; }, 0);
+};
+
+DAL.rememberCanvasScroll = function(proj){
+  var els = DAL.canvasEls();
+  if(!els || DAL._canvasRestoring) return;
+  var view = DAL.canvasView(proj);
+  view.scrollX = els.container.scrollLeft;
+  view.scrollY = els.container.scrollTop;
+  DAL.saveState();
+};
+
+/* Steps to another zoom level while holding whatever is in the middle of the
+   viewport still, which is what makes repeated zooming feel like it is aimed at
+   the work rather than at the corner of the board. */
+DAL.stepCanvasZoom = function(proj, delta){
+  var els = DAL.canvasEls();
+  if(!els) return;
+  var view = DAL.canvasView(proj);
+  var i = DAL.zoomIndex(view.zoom) + delta;
+  if(i < 0 || i >= DAL.ZOOM_LEVELS.length){
+    DAL.toast(delta > 0 ? 'Already at the closest zoom' : 'Already at the widest zoom', 'info');
+    return;
+  }
+  var c = els.container;
+  var midX = (c.scrollLeft + c.clientWidth / 2) / view.zoom;
+  var midY = (c.scrollTop + c.clientHeight / 2) / view.zoom;
+  view.zoom = DAL.ZOOM_LEVELS[i];
+  DAL.applyCanvasView(proj);
+  DAL._canvasRestoring = true;
+  c.scrollLeft = Math.max(0, midX * view.zoom - c.clientWidth / 2);
+  c.scrollTop = Math.max(0, midY * view.zoom - c.clientHeight / 2);
+  setTimeout(function(){ DAL._canvasRestoring = false; }, 0);
+  view.scrollX = c.scrollLeft;
+  view.scrollY = c.scrollTop;
+  DAL.saveState();
+};
+
+/* Reset means 100% centred on the work: an empty board goes to the origin, and
+   a board with scenes centres on them, so reset always ends up somewhere useful
+   rather than staring at blank grid. */
+DAL.resetCanvasView = function(proj){
+  var els = DAL.canvasEls();
+  if(!els) return;
+  var view = DAL.canvasView(proj);
+  view.zoom = 1;
+  DAL.applyCanvasView(proj);
+  var nodes = (DAL.canvasData(proj).nodes || []);
+  var x = 0, y = 0;
+  if(nodes.length){
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    nodes.forEach(function(n){
+      var nx = n.x || 0, ny = n.y || 0;
+      if(nx < minX) minX = nx;
+      if(ny < minY) minY = ny;
+      if(nx > maxX) maxX = nx;
+      if(ny > maxY) maxY = ny;
+    });
+    x = (minX + maxX) / 2 - els.container.clientWidth / 2;
+    y = (minY + maxY) / 2 - els.container.clientHeight / 2;
+  }
+  view.scrollX = Math.max(0, Math.round(x));
+  view.scrollY = Math.max(0, Math.round(y));
+  DAL.restoreCanvasScroll(proj);
+  DAL.saveState();
+};
+
+/* Grab mode is sticky: press once to pick the hand up, press again (or Escape)
+   to put it down. It is toggled in place rather than through a re-render so the
+   board does not flicker or lose its place mid-gesture. */
+DAL.setGrabMode = function(on){
+  DAL.grabMode = !!on;
+  var els = DAL.canvasEls();
+  if(els) els.container.classList.toggle('grab-mode', DAL.grabMode);
+  var btn = document.querySelector('[data-action="sg-grab"]');
+  if(btn){
+    btn.classList.toggle('active', DAL.grabMode);
+    btn.setAttribute('aria-pressed', DAL.grabMode ? 'true' : 'false');
+  }
+};
+
+DAL.handleCanvasClick = function(action, el, e){
+  if(!DAL.currentProjectId) return;
+  var proj = DAL.state.projects[DAL.currentProjectId];
+  if(!proj || !DAL.canvasEls()) return;
+  if(action === 'sg-grab'){ DAL.setGrabMode(!DAL.grabMode); return; }
+  if(action === 'sg-zoom-in'){ DAL.stepCanvasZoom(proj, 1); return; }
+  if(action === 'sg-zoom-out'){ DAL.stepCanvasZoom(proj, -1); return; }
+  if(action === 'sg-reset'){ DAL.resetCanvasView(proj); return; }
+};
+
+/* Redraws the connection lines from the current node positions. Called on every
+   frame of a node drag as well as after one, so lines stay attached to their
+   nodes instead of snapping into place at the end. */
+DAL.drawCanvasEdges = function(proj, data){
+  var els = DAL.canvasEls();
+  if(!els || !els.svg) return;
+  var isStoryGraph = DAL.canvasBoard() === 'storygraph';
+  var parts = [];
+  // The arrow marker has to be redefined each time because the whole svg body is
+  // rewritten; a story graph reads as a direction of travel without it.
+  if(isStoryGraph){
+    parts.push('<defs><marker id="arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">'+
+      '<path d="M0,0 L10,5 L0,10 z" fill="var(--c-border)"/></marker></defs>');
+  }
+  var curve = function(from, to, extra, trim){
+    var x1 = (from.x||0)+70, y1 = (from.y||0)+20;
+    var x2 = (to.x||0)+70, y2 = (to.y||0)+20;
+    var mx = (x1+x2)/2, my = (y1+y2)/2-20;
+    if(trim){
+      // Lines run centre to centre, so an arrowhead at the exact end point would
+      // sit underneath the scene box where nobody can see it. Pull the end back
+      // to just outside the box along the direction the line arrives from.
+      var dx = x2-mx, dy = y2-my;
+      var hw = 78, hh = 32;
+      var t = Math.min(Math.abs(dx) > 0.01 ? hw/Math.abs(dx) : Infinity,
+                       Math.abs(dy) > 0.01 ? hh/Math.abs(dy) : Infinity);
+      if(isFinite(t) && t < 1){ x2 -= dx*t; y2 -= dy*t; }
+    }
+    return '<path d="M'+x1+','+y1+' Q'+mx+','+my+' '+Math.round(x2)+','+Math.round(y2)+'" fill="none" stroke="var(--c-border)" stroke-width="2" '+extra+'/>';
+  };
+  var nodes = data.nodes || [];
+  var find = function(id){ return nodes.find(function(n){ return n.id === id; }); };
+  if(isStoryGraph){
+    nodes.forEach(function(n){
+      (n.choices||[]).forEach(function(ch){
+        if(!ch.targetNodeId) return;
+        var to = find(ch.targetNodeId);
+        if(to) parts.push(curve(n, to, 'marker-end="url(#arrowhead)" style="pointer-events:none"', true));
+      });
+    });
+  } else {
+    (data.edges||[]).forEach(function(edge){
+      var from = find(edge.from), to = find(edge.to);
+      if(from && to) parts.push(curve(from, to, 'data-action="mm-delete-edge" data-eid="'+edge.id+'" style="pointer-events:stroke;cursor:pointer"'));
     });
   }
+  els.svg.innerHTML = parts.join('');
+};
 
-  // Drag nodes
-  var dragNode = null, dragOff = {x:0,y:0};
-  container.addEventListener('mousedown', function(e){
+DAL.initCanvasInteractions = function(proj){
+  var els = DAL.canvasEls();
+  if(!els) return;
+  var container = els.container, stage = els.stage;
+  var data = DAL.canvasData(proj);
+
+  DAL.applyCanvasView(proj);
+  DAL.restoreCanvasScroll(proj);
+  DAL.drawCanvasEdges(proj, data);
+  container.classList.toggle('grab-mode', DAL.grabMode);
+
+  // Assigned rather than added: the canvas markup is rebuilt on every render, but
+  // this runs again on plain redraws too, and addEventListener would stack up a
+  // second and third copy of the same gesture on the same element.
+  var gesture = null;
+
+  container.onpointerdown = function(e){
+    if(e.button > 0) return;
     var nodeEl = e.target.closest('.canvas-node');
-    if(nodeEl && !DAL.connectMode){
-      var nid = nodeEl.getAttribute('data-nid');
-      dragNode = mm.nodes.find(function(n){ return n.id === nid; });
-      if(dragNode){
-        var rect = inner.getBoundingClientRect();
-        dragOff.x = e.clientX - rect.left - (dragNode.x||0);
-        dragOff.y = e.clientY - rect.top - (dragNode.y||0);
-        e.preventDefault();
+    var view = DAL.canvasView(proj);
+    if(nodeEl && !DAL.grabMode && !DAL.connectMode){
+      var node = (data.nodes||[]).find(function(n){ return n.id === nodeEl.getAttribute('data-nid'); });
+      if(!node) return;
+      gesture = { kind: 'node', node: node, el: nodeEl, fromX: node.x||0, fromY: node.y||0 };
+    } else if(DAL.grabMode){
+      gesture = { kind: 'pan', scrollX: container.scrollLeft, scrollY: container.scrollTop };
+    } else {
+      return;
+    }
+    gesture.id = e.pointerId;
+    gesture.startX = e.clientX;
+    gesture.startY = e.clientY;
+    gesture.moved = false;
+    // Capturing keeps the gesture alive when the pointer runs off the node or
+    // past the edge of the canvas mid-drag.
+    try { container.setPointerCapture(e.pointerId); } catch(err) {}
+  };
+
+  container.onpointermove = function(e){
+    if(!gesture || e.pointerId !== gesture.id) return;
+    var dx = e.clientX - gesture.startX, dy = e.clientY - gesture.startY;
+    if(!gesture.moved && Math.abs(dx) + Math.abs(dy) < DAL.CANVAS_DRAG_SLOP) return;
+    gesture.moved = true;
+    if(gesture.kind === 'pan'){
+      // Panning moves the scroll box, which is measured in screen pixels, so the
+      // pointer movement is used as it comes.
+      DAL._canvasRestoring = true;
+      container.scrollLeft = gesture.scrollX - dx;
+      container.scrollTop = gesture.scrollY - dy;
+    } else {
+      // Node coordinates are unscaled board units, so the movement is divided by
+      // the zoom or the node slides away from the pointer at any other scale.
+      var z = DAL.canvasView(proj).zoom;
+      gesture.node.x = Math.max(0, Math.round(gesture.fromX + dx / z));
+      gesture.node.y = Math.max(0, Math.round(gesture.fromY + dy / z));
+      gesture.el.style.left = gesture.node.x + 'px';
+      gesture.el.style.top = gesture.node.y + 'px';
+      DAL.drawCanvasEdges(proj, data);
+    }
+  };
+
+  var finish = function(e){
+    if(!gesture || (e && e.pointerId !== gesture.id)) return;
+    try { container.releasePointerCapture(gesture.id); } catch(err) {}
+    if(gesture.moved){
+      // A real drag must not also count as a click, or letting go of a node
+      // would open its editor every time.
+      DAL._canvasClickGuard = true;
+      if(gesture.kind === 'node'){
+        proj.updatedAt = Date.now();
+        DAL.drawCanvasEdges(proj, data);
+        DAL.saveState();
+      } else {
+        DAL._canvasRestoring = false;
+        DAL.rememberCanvasScroll(proj);
       }
     }
-  });
-  container.addEventListener('mousemove', function(e){
-    if(dragNode){
-      var rect = inner.getBoundingClientRect();
-      dragNode.x = e.clientX - rect.left - dragOff.x;
-      dragNode.y = e.clientY - rect.top - dragOff.y;
-      var el = container.querySelector('[data-nid="'+dragNode.id+'"]');
-      if(el){ el.style.left = dragNode.x+'px'; el.style.top = dragNode.y+'px'; }
-      DAL._canvasDirty = true;
-    }
-  });
-  container.addEventListener('mouseup', function(){
-    if(dragNode && DAL._canvasDirty){
-      DAL._canvasDirty = false;
-      DAL.saveState();
-      DAL.initCanvasInteractions(proj);
-    }
-    dragNode = null;
-  });
+    gesture = null;
+  };
+  container.onpointerup = finish;
+  container.onpointercancel = finish;
 
-  // Double-click to add node
-  container.addEventListener('dblclick', function(e){
-    if(e.target === container || e.target === inner || e.target === svg){
-      var rect = inner.getBoundingClientRect();
-      var node = { id: DAL.uid('mm'), label: 'New Idea', type: 'idea', x: e.clientX - rect.left, y: e.clientY - rect.top };
-      mm.nodes.push(node);
-      DAL.saveState(); DAL.render();
+  container.onclick = function(e){
+    if(DAL._canvasClickGuard){
+      DAL._canvasClickGuard = false;
+      e.stopPropagation();
+      e.preventDefault();
     }
-  });
+  };
+
+  container.onscroll = function(){
+    if(DAL._canvasRestoring) return;
+    if(DAL._canvasScrollTimer) clearTimeout(DAL._canvasScrollTimer);
+    DAL._canvasScrollTimer = setTimeout(function(){ DAL.rememberCanvasScroll(proj); }, 250);
+  };
+
+  // Double-click adds an idea to a mind map. A story graph's scenes are created
+  // from the toolbar instead, because a scene needs a title and text to mean
+  // anything.
+  container.ondblclick = function(e){
+    if(DAL.canvasBoard() === 'storygraph') return;
+    if(e.target !== container && e.target !== els.inner && e.target !== stage && e.target !== els.svg) return;
+    var rect = stage.getBoundingClientRect();
+    var z = DAL.canvasView(proj).zoom;
+    data.nodes.push({
+      id: DAL.uid('mm'), label: 'New Idea', type: 'idea',
+      x: Math.max(0, Math.round((e.clientX - rect.left) / z)),
+      y: Math.max(0, Math.round((e.clientY - rect.top) / z))
+    });
+    DAL.saveState(); DAL.render();
+  };
 };
 
 /* --- Book Preview --- */
@@ -813,7 +1087,7 @@ DAL.renderBookPreview = function(proj){
     (proj.cover.imageDataUrl?'<div class="cover-preview-box"><img src="'+proj.cover.imageDataUrl+'"></div>':'<div class="cover-preview-box empty">No cover image set</div>')+
     '<div style="display:flex;gap:8px;margin-top:8px">'+
     '<input type="file" id="coverImageInput" accept="image/*" style="display:none">'+
-    '<button class="btn sm" data-action="upload-cover" data-tip="Upload cover illustration">'+(proj.cover.imageDataUrl?'Change Image':'Upload Cover')+'</button>'+
+    '<button class="btn sm" data-action="upload-cover">'+(proj.cover.imageDataUrl?'Change Image':'Upload Cover')+'</button>'+
     (proj.cover.imageDataUrl?'<button class="btn sm danger" data-action="remove-cover">Remove</button>':'')+
     '</div></div>' });
   var tocHtml = '<h1>Table of Contents</h1>';
@@ -839,19 +1113,99 @@ DAL.renderBookPreview = function(proj){
   return html;
 };
 
+/* --- Export registry -------------------------------------------------------
+   Every export button in the app is generated from this one list so the Export
+   tool tab, the RPG export tab and the Export Project dialog cannot drift apart
+   in wording or in which formats they offer. Groups appear only when the
+   project actually has that kind of content. */
+DAL.exportGroups = function(proj){
+  var groups = [];
+  var chapters = proj.chapters || [];
+  var nodes = (proj.adventure && proj.adventure.nodes) ? proj.adventure.nodes : [];
+  var hasProse = proj.type === 'novel' || proj.type === 'dual' || chapters.length > 0;
+  var hasAdventure = proj.type === 'rpg' || proj.type === 'dual' || nodes.length > 0;
+
+  groups.push({
+    title: 'Whole project',
+    note: 'Everything in this project: chapters, characters, lore, adventure and its settings. Import it again with File \u25b8 Import project, which adds it alongside your other projects.',
+    items: [{ action: 'export-json', label: 'Project data (.json)' }]
+  });
+  if(hasProse){
+    groups.push({
+      title: 'Manuscript',
+      note: 'The prose on its own. This is not a project backup \u2014 characters, lore and settings are not included.',
+      items: [
+        { action: 'export-manuscript-txt',  label: 'Manuscript (.txt)' },
+        { action: 'export-manuscript-md',   label: 'Manuscript (.md)' },
+        { action: 'export-manuscript-html', label: 'Manuscript (.html)' }
+      ]
+    });
+  }
+  if(chapters.length){
+    groups.push({
+      title: 'Single chapter',
+      select: { id: 'exportChapterSelect', options: chapters.map(function(ch, i){ return { value: ch.id, label: (i + 1) + '. ' + ch.title }; }) },
+      items: [
+        { action: 'export-chapter-txt', label: 'Chapter (.txt)', small: true },
+        { action: 'export-chapter-md',  label: 'Chapter (.md)',  small: true }
+      ]
+    });
+  }
+  if(hasAdventure){
+    groups.push({
+      title: 'Adventure',
+      note: 'Playable formats for the branching story. The playable file runs the same rules the Playthrough tool runs, on its own, in any browser. Twine source opens in Twine and carries stats, traits, items and gated choices; anything SugarCube cannot express is listed in a "Not Carried Over" passage.',
+      items: [
+        { action: 'export-twee',          label: 'Twine source (.twee)' },
+        { action: 'export-playable-html', label: 'Playable adventure (.html)' }
+      ]
+    });
+  }
+  if(nodes.length){
+    groups.push({
+      title: 'Single scene',
+      select: { id: 'exportNodeSelect', options: nodes.map(function(n){ return { value: n.id, label: n.title || 'Untitled' }; }) },
+      items: [{ action: 'export-node-text', label: 'Scene (.txt)', small: true }]
+    });
+  }
+  return groups;
+};
+
+DAL.renderExportGroups = function(proj){
+  return DAL.exportGroups(proj).map(function(g){
+    var h = '<div class="card export-group"><div class="export-group-title">' + DAL.escapeHtml(g.title) + '</div>';
+    if(g.note) h += '<p class="export-group-note">' + DAL.escapeHtml(g.note) + '</p>';
+    if(g.select){
+      h += '<select class="form-select export-group-select" id="' + g.select.id + '">';
+      g.select.options.forEach(function(o){ h += '<option value="' + o.value + '">' + DAL.escapeHtml(o.label) + '</option>'; });
+      h += '</select>';
+    }
+    h += '<div class="export-group-actions">';
+    g.items.forEach(function(it){
+      h += '<button class="btn' + (it.small ? ' sm' : '') + '" data-action="' + it.action + '" data-pid="' + proj.id + '">' + DAL.escapeHtml(it.label) + '</button>';
+    });
+    return h + '</div></div>';
+  }).join('');
+};
+
+/* Export actions also fire from the File menu, where no button carries a
+   project id, so fall back to the open project. */
+DAL.exportTarget = function(el){
+  var pid = (el && el.getAttribute) ? el.getAttribute('data-pid') : null;
+  return DAL.state.projects[pid || DAL.currentProjectId] || null;
+};
+
+/* The same select ids exist in a tool panel and in the Export Project dialog
+   layered over it, so prefer the dialog's copy while one is open. */
+DAL.exportSelectValue = function(id){
+  var el = document.querySelector('.modal-backdrop #' + id) || document.getElementById(id);
+  return el ? el.value : '';
+};
+
 /* --- Story Export --- */
 DAL.renderStoryExport = function(proj){
   var html = '<div style="max-width:700px"><div class="section-header"><div class="section-title">Export</div></div>';
-  html += '<div class="card" style="margin-bottom:12px"><div style="font-weight:600;margin-bottom:8px">Full Project</div><div style="display:flex;gap:8px;flex-wrap:wrap">'+
-    '<button class="btn" data-action="export-json" data-pid="'+proj.id+'" data-tip="Export as JSON (re-importable)">Export JSON</button>'+
-    '<button class="btn" data-action="export-manuscript-txt" data-pid="'+proj.id+'" data-tip="Plain text manuscript">Manuscript (TXT)</button>'+
-    '<button class="btn" data-action="export-manuscript-md" data-pid="'+proj.id+'" data-tip="Markdown manuscript">Manuscript (MD)</button>'+
-    '<button class="btn" data-action="export-manuscript-html" data-pid="'+proj.id+'" data-tip="HTML manuscript">Manuscript (HTML)</button>'+
-  '</div></div>';
-
-  html += '<div class="card" style="margin-bottom:12px"><div style="font-weight:600;margin-bottom:8px">Individual Chapter</div><select class="form-select" id="exportChapterSelect" style="margin-bottom:8px">';
-  (proj.chapters||[]).forEach(function(ch, i){ html += '<option value="'+ch.id+'">'+(i+1)+'. '+DAL.escapeHtml(ch.title)+'</option>'; });
-  html += '</select><div style="display:flex;gap:8px"><button class="btn sm" data-action="export-chapter-txt" data-pid="'+proj.id+'">TXT</button><button class="btn sm" data-action="export-chapter-md" data-pid="'+proj.id+'">Markdown</button></div></div>';
+  html += DAL.renderExportGroups(proj);
 
   html += '<div class="card" style="margin-bottom:12px"><div style="font-weight:600;margin-bottom:8px">Cross-Project Transfer</div><p style="font-size:var(--ts-sm);color:var(--c-text-muted);margin-bottom:8px">Copy a character, lore entry, or plot thread into another project.</p>'+
     '<div class="form-row"><select class="form-select" id="transferType"><option value="character">Character</option><option value="lore">Lore Entry</option><option value="plot">Plot Thread</option></select>'+
@@ -863,11 +1217,11 @@ DAL.renderStoryExport = function(proj){
 
   // Version snapshots
   html += '<div class="card"><div style="font-weight:600;margin-bottom:8px">Version Snapshots</div>';
-  html += '<button class="btn sm" data-action="save-version" data-pid="'+proj.id+'" data-tip="Save a version now">Save Version Now</button>';
+  html += '<button class="btn sm" data-action="save-version" data-pid="'+proj.id+'">Save Version Now</button>';
   if(proj.versions && proj.versions.length){
     html += '<div style="margin-top:8px;max-height:200px;overflow-y:auto">';
     proj.versions.forEach(function(v, i){
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--c-divider)"><span style="font-size:var(--ts-xs)">'+new Date(v.ts).toLocaleString()+(v.auto?' (auto)':'')+' — '+v.snapWords+' words</span><button class="btn sm" data-action="restore-version" data-pid="'+proj.id+'" data-idx="'+i+'" data-tip="Restore this version">Restore</button></div>';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--c-divider)"><span style="font-size:var(--ts-xs)">'+new Date(v.ts).toLocaleString()+(v.auto?' (auto)':'')+' — '+v.snapWords+' words</span><button class="btn sm" data-action="restore-version" data-pid="'+proj.id+'" data-idx="'+i+'">Restore</button></div>';
     });
     html += '</div>';
   } else {
@@ -878,15 +1232,9 @@ DAL.renderStoryExport = function(proj){
 };
 
 DAL.showExportModal = function(pid){
-  var proj = DAL.state.projects[pid];
-  if(!proj) return;
-  var html = '<div style="display:flex;flex-direction:column;gap:8px">'+
-    '<button class="btn" data-action="export-json" data-pid="'+pid+'">Export as JSON</button>'+
-    '<button class="btn" data-action="export-manuscript-txt" data-pid="'+pid+'">Manuscript as Plain Text</button>'+
-    '<button class="btn" data-action="export-manuscript-md" data-pid="'+pid+'">Manuscript as Markdown</button>'+
-    '<button class="btn" data-action="export-manuscript-html" data-pid="'+pid+'">Manuscript as HTML</button>'+
-  '</div>';
-  DAL.modal('Export Project', html, { footer: '<button class="btn" data-action="close-modal">Close</button>' });
+  var proj = DAL.state.projects[pid || DAL.currentProjectId];
+  if(!proj){ DAL.toast('Open a project first.','error'); return; }
+  DAL.modal('Export \u201c' + DAL.escapeHtml(proj.name) + '\u201d', '<div class="export-groups">' + DAL.renderExportGroups(proj) + '</div>', { footer: '<button class="btn" data-action="close-modal">Close</button>' });
 };
 
 /* --- Story Click Handler --- */
@@ -1342,16 +1690,19 @@ DAL.handleStoryClick = function(action, el, e){
 
   // Export
   if(action === 'export-json'){
-    var proj25 = DAL.state.projects[el.getAttribute('data-pid')];
+    var proj25 = DAL.exportTarget(el);
+    if(!proj25){ DAL.toast('Open a project first.','error'); return; }
     var data = DAL.clone(proj25);
     delete data.history; delete data.versions; delete data.folderHandle;
     DAL.downloadJSON(DAL.sanitizeFilename(proj25.name)+'.json', data);
-    DAL.closeModal(); DAL.toast('Project exported','success');
+    DAL.closeModal(); DAL.toast('Project data downloaded.','success');
     return;
   }
 
   if(action === 'export-manuscript-txt' || action === 'export-manuscript-md' || action === 'export-manuscript-html'){
-    var proj26 = DAL.state.projects[el.getAttribute('data-pid')];
+    var proj26 = DAL.exportTarget(el);
+    if(!proj26){ DAL.toast('Open a project first.','error'); return; }
+    if(!(proj26.chapters||[]).length){ DAL.toast('This project has no chapters to export.','error'); return; }
     var txt = '';
     if(action === 'export-manuscript-html'){
       txt += '<!DOCTYPE html><html><head><title>'+DAL.escapeHtml(proj26.name)+'</title></head><body>';
@@ -1374,19 +1725,20 @@ DAL.handleStoryClick = function(action, el, e){
       });
       DAL.download(DAL.sanitizeFilename(proj26.name)+'.txt', txt);
     }
-    DAL.closeModal(); DAL.toast('Manuscript exported','success');
+    DAL.closeModal(); DAL.toast(action === 'export-manuscript-txt' ? 'Manuscript TXT downloaded.' : (action === 'export-manuscript-md' ? 'Manuscript Markdown downloaded.' : 'Manuscript HTML downloaded.'),'success');
     return;
   }
 
   if(action === 'export-chapter-txt' || action === 'export-chapter-md'){
-    var proj27 = DAL.state.projects[el.getAttribute('data-pid')];
-    var chId = document.getElementById('exportChapterSelect').value;
+    var proj27 = DAL.exportTarget(el);
+    if(!proj27) return;
+    var chId = DAL.exportSelectValue('exportChapterSelect');
     var ch7 = (proj27.chapters||[]).find(function(c){ return c.id === chId; });
     if(ch7){
       var tmp3 = document.createElement('div'); tmp3.innerHTML = ch7.contentHTML;
       if(action === 'export-chapter-md') DAL.download(DAL.sanitizeFilename(ch7.title)+'.md', '## '+ch7.title+'\n\n'+tmp3.textContent, 'text/markdown');
       else DAL.download(DAL.sanitizeFilename(ch7.title)+'.txt', ch7.title+'\n\n'+tmp3.textContent);
-      DAL.toast('Chapter exported','success');
+      DAL.toast(action === 'export-chapter-md' ? 'Chapter Markdown downloaded.' : 'Chapter TXT downloaded.','success');
     }
     return;
   }

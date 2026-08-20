@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Offline-first app. The bundled app runs fully offline; this permission
+         only enables optional online extras (more fonts loaded from Google Fonts
+         when a connection is available). No data is sent anywhere. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"

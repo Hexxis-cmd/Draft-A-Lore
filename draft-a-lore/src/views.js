@@ -10,110 +10,604 @@
    ============================================ */
 DAL = DAL || {};
 
-/* --- Dashboard --- */
+/* --- Dashboard ------------------------------------------------------------
+   The Dashboard is composed from DAL.DASHBOARD_CARDS: each entry has a body
+   renderer here, and the page is assembled in the reader's saved order at their
+   saved widths. A body renderer returning an empty string means "nothing worth
+   showing" and the card is dropped from the page entirely rather than left as an
+   empty box — except while organizing, where every card must stay reachable so
+   it can be moved or hidden. */
+DAL.dashboardCardBody = {};
+
 DAL.renderDashboard = function(){
-  var html = '<div style="max-width:900px;margin:0 auto">';
+  var layout = DAL.dashboardLayout();
+  var organizing = DAL.organizeDashboard;
+
+  var html = '<div class="dashboard' + (organizing ? ' organizing' : '') + '">';
+  html += DAL.renderDashboardBar(layout, organizing);
+  html += '<div class="dash-grid">';
+
+  var visible = layout.order.filter(function(id){ return layout.hidden.indexOf(id) === -1; });
+  var rendered = 0;
+  visible.forEach(function(id, i){
+    var card = DAL.dashboardCard(id);
+    var body = DAL.dashboardCardBody[id] ? DAL.dashboardCardBody[id]() : '';
+    if(!body && !organizing) return;
+    rendered++;
+    html += DAL.renderDashboardCard(card, layout.size[id], body, {
+      organizing: organizing,
+      first: i === 0,
+      last: i === visible.length - 1,
+      empty: !body
+    });
+  });
+  if(!rendered){
+    html += '<div class="dash-cell full"><div class="empty-state" style="padding:32px 16px">' +
+      '<h3>Every card is hidden</h3><p>Turn on Organize Dashboard to bring cards back.</p></div></div>';
+  }
+  html += '</div>';
+
+  if(organizing) html += DAL.renderHiddenCardTray(layout);
+  html += '</div>';
+  return html;
+};
+
+/* The bar above the grid. Outside organize mode it carries a single button and
+   no per-card affordances anywhere on the page. */
+DAL.renderDashboardBar = function(layout, organizing){
+  var html = '<div class="dash-bar">';
+  if(organizing){
+    html += '<div class="dash-bar-text">' +
+      '<strong>Organizing your dashboard</strong>' +
+      '<span>Move, resize, and hide cards. Changes save as you make them.</span>' +
+      '</div>' +
+      '<div class="dash-bar-actions">' +
+        '<button class="btn sm" data-action="dash-reset">Reset to default</button>' +
+        '<button class="btn sm primary" data-action="dash-organize-off">Done</button>' +
+      '</div>';
+  } else {
+    html += '<div class="dash-bar-text"><strong>Dashboard</strong></div>' +
+      '<div class="dash-bar-actions">' +
+        '<button class="btn sm" data-action="dash-organize-on">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>' +
+          'Organize Dashboard</button>' +
+      '</div>';
+  }
+  html += '</div>';
+  return html;
+};
+
+DAL.renderDashboardCard = function(card, size, body, opts){
+  var cls = 'dash-cell ' + size.w + (size.h === 'tall' ? ' tall' : '');
+  var html = '<section class="' + cls + '" data-card="' + card.id + '" aria-label="' + DAL.escapeHtml(card.label) + '">';
+  if(opts.organizing){
+    html += DAL.renderCardOrganizeControls(card, size, opts);
+  }
+  html += '<div class="dash-card-body">';
+  html += opts.empty
+    ? '<div class="dash-card-placeholder">Nothing to show here yet.</div>'
+    : body;
+  html += '</div></section>';
+  return html;
+};
+
+/* Buttons are the baseline for reordering: they work with a mouse, a keyboard,
+   a screen reader and a thumb, which drag-and-drop alone does not. */
+DAL.renderCardOrganizeControls = function(card, size, opts){
+  var html = '<header class="dash-card-organize">';
+  html += '<span class="dash-card-name">' + DAL.escapeHtml(card.label) + '</span>';
+  html += '<div class="dash-card-tools">';
+  html += '<button class="dash-tool" data-action="dash-move" data-card="' + card.id + '" data-dir="-1"' +
+    (opts.first ? ' disabled' : '') + ' aria-label="Move ' + DAL.escapeHtml(card.label) + ' up" title="Move up">' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg></button>';
+  html += '<button class="dash-tool" data-action="dash-move" data-card="' + card.id + '" data-dir="1"' +
+    (opts.last ? ' disabled' : '') + ' aria-label="Move ' + DAL.escapeHtml(card.label) + ' down" title="Move down">' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg></button>';
+
+  if(!card.alwaysFull){
+    html += '<span class="dash-tool-sep"></span>';
+    html += '<button class="dash-tool text' + (size.w === 'half' ? ' active' : '') + '" data-action="dash-width" data-card="' + card.id + '" data-w="half"' +
+      ' aria-pressed="' + (size.w === 'half') + '" title="Half width">Half</button>';
+    html += '<button class="dash-tool text' + (size.w === 'full' ? ' active' : '') + '" data-action="dash-width" data-card="' + card.id + '" data-w="full"' +
+      ' aria-pressed="' + (size.w === 'full') + '" title="Full width">Full</button>';
+  }
+  if(card.tall){
+    html += '<span class="dash-tool-sep"></span>';
+    html += '<button class="dash-tool text' + (size.h === 'tall' ? ' active' : '') + '" data-action="dash-height" data-card="' + card.id + '"' +
+      ' aria-pressed="' + (size.h === 'tall') + '" title="Toggle taller card">Tall</button>';
+  }
+  html += '<span class="dash-tool-sep"></span>';
+  html += '<button class="dash-tool" data-action="dash-hide" data-card="' + card.id + '" aria-label="Hide ' + DAL.escapeHtml(card.label) + '" title="Hide this card">' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-10-8-10-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="2" y1="2" x2="22" y2="22"/></svg></button>';
+  html += '</div></header>';
+  return html;
+};
+
+DAL.renderHiddenCardTray = function(layout){
+  var html = '<div class="dash-hidden-tray">';
+  html += '<div class="dash-hidden-title">Hidden cards</div>';
+  if(!layout.hidden.length){
+    html += '<p class="dash-hidden-empty">No hidden cards. Anything you hide lands here so you can bring it back.</p>';
+  } else {
+    html += '<div class="dash-hidden-list">';
+    // Listed in registry order rather than the order they were hidden, so the
+    // tray reads the same every time instead of shuffling as you work.
+    DAL.DASHBOARD_CARDS.forEach(function(card){
+      if(layout.hidden.indexOf(card.id) === -1) return;
+      html += '<button class="dash-hidden-chip" data-action="dash-show" data-card="' + card.id + '">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+        DAL.escapeHtml(card.label) + '</button>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+};
+
+/* --- Dashboard card bodies --- */
+
+DAL.dashboardCardBody.continue = function(){
   var projects = DAL.state.projectOrder.map(function(id){ return DAL.state.projects[id]; }).filter(Boolean);
-  var lastEdited = projects.length ? projects.reduce(function(a,b){ return (a.updatedAt||0) > (b.updatedAt||0) ? a : b; }) : null;
+  if(!projects.length) return '';
+  var last = projects.reduce(function(a, b){ return (a.updatedAt||0) > (b.updatedAt||0) ? a : b; });
+  var wc = DAL.getProjectWordCount(last);
+  return '<div class="dash-continue">' +
+    '<div class="dash-continue-info">' +
+      '<div class="dash-eyebrow">Continue writing</div>' +
+      '<div class="dash-continue-name">' + DAL.escapeHtml(last.name) + '</div>' +
+      '<div class="dash-badges">' +
+        '<span class="badge accent">' + DAL.escapeHtml(last.type) + '</span>' +
+        '<span class="badge">' + DAL.escapeHtml(last.status) + '</span>' +
+        '<span class="badge">' + wc.total.toLocaleString() + ' words</span>' +
+        '<span class="badge">' + DAL.escapeHtml(DAL.formatDate(last.updatedAt)) + '</span>' +
+      '</div>' +
+    '</div>' +
+    '<button class="btn primary" data-action="open-project" data-pid="' + last.id + '">Continue Writing</button>' +
+  '</div>';
+};
+
+DAL.dashboardCardBody.profile = function(){
+  var projects = DAL.state.projectOrder.map(function(id){ return DAL.state.projects[id]; }).filter(Boolean);
   var gwc = DAL.getGlobalWordCount();
   var streak = DAL.getWritingStreak();
   var hasProfile = DAL.state.authorName || DAL.state.authorBio || DAL.state.authorAvatar;
-
-  // Continue Writing Banner
-  if(lastEdited){
-    var wc = DAL.getProjectWordCount(lastEdited);
-    html += '<div class="card" style="margin-bottom:20px;border-left:3px solid var(--c-accent)">'+
-      '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">'+
-        '<div><div style="font-size:var(--ts-xs);color:var(--c-text-muted);margin-bottom:4px">CONTINUE WRITING</div>'+
-        '<div style="font-family:var(--font-display);font-size:var(--ts-lg);font-weight:700">'+DAL.escapeHtml(lastEdited.name)+'</div>'+
-        '<div style="display:flex;gap:8px;margin-top:4px">'+
-          '<span class="badge accent">'+DAL.escapeHtml(lastEdited.type)+'</span>'+
-          '<span class="badge">'+DAL.escapeHtml(lastEdited.status)+'</span>'+
-          '<span class="badge">'+wc.total+' words</span>'+
-          '<span class="badge">'+DAL.formatDate(lastEdited.updatedAt)+'</span>'+
-        '</div></div>'+
-        '<button class="btn primary" data-action="open-project" data-pid="'+lastEdited.id+'" data-tip="Open '+DAL.escapeHtml(lastEdited.name)+'">Continue Writing</button>'+
-      '</div></div>';
-  }
-
-  // Author Profile Card
-  html += '<div class="dashboard-profile-card">';
-  html += '<div class="profile-card-header" style="display:flex;align-items:flex-start;gap:20px">';
-  // Avatar
   var initials = (DAL.state.authorName||'?').split(' ').map(function(w){ return w[0]; }).join('').substring(0,2).toUpperCase();
-  html += '<div class="profile-avatar">'+(DAL.state.authorAvatar?'<img src="'+DAL.state.authorAvatar+'">':DAL.escapeHtml(initials))+'</div>';
-  // Name + bio
+
+  var html = '<div class="dashboard-profile-card">';
+  html += '<div class="profile-card-header">';
+  html += '<div class="profile-avatar">' + (DAL.state.authorAvatar ? '<img src="' + DAL.state.authorAvatar + '" alt="">' : DAL.escapeHtml(initials)) + '</div>';
   html += '<div style="flex:1;min-width:0">';
-  if(DAL.state.authorName){
-    html += '<div class="profile-name">'+DAL.escapeHtml(DAL.state.authorName)+'</div>';
-  } else {
-    html += '<div class="profile-name" style="color:var(--c-text-muted)">Your Author Name</div>';
-  }
+  html += DAL.state.authorName
+    ? '<div class="profile-name">' + DAL.escapeHtml(DAL.state.authorName) + '</div>'
+    : '<div class="profile-name muted">Your Author Name</div>';
   if(DAL.state.authorBio){
-    html += '<div class="profile-bio">'+DAL.escapeHtml(DAL.state.authorBio)+'</div>';
+    html += '<div class="profile-bio">' + DAL.escapeHtml(DAL.state.authorBio) + '</div>';
   } else if(!hasProfile){
-    html += '<div class="profile-bio" style="color:var(--c-text-faint)">Set up your author profile in Settings to add your name, bio, and photo. This appears on your book covers, title pages, and exports when auto-fill is enabled.</div>';
+    html += '<div class="profile-bio faint">Set up your author profile in Settings to add your name, bio, and photo. This appears on your book covers, title pages, and exports when auto-fill is enabled.</div>';
   } else {
-    html += '<div class="profile-bio" style="color:var(--c-text-faint)">No bio written yet. Add one in Settings.</div>';
+    html += '<div class="profile-bio faint">No bio written yet. Add one in Settings.</div>';
   }
   html += '</div>';
-  // Edit button
-  html += '<button class="btn sm" data-action="nav-settings" data-tip="Edit your profile in Settings">Edit Profile</button>';
-  html += '</div>'; // end header
-  // Stats row inside profile card
+  html += '<button class="btn sm" data-action="nav-settings">Edit Profile</button>';
+  html += '</div>';
   if(hasProfile){
-    html += '<div class="profile-card-stats">';
-    html += '<div class="profile-stat"><span class="profile-stat-num">'+projects.length+'</span><span class="profile-stat-label">Projects</span></div>';
-    html += '<div class="profile-stat"><span class="profile-stat-num">'+gwc.total.toLocaleString()+'</span><span class="profile-stat-label">Words Written</span></div>';
-    html += '<div class="profile-stat"><span class="profile-stat-num">'+streak+'</span><span class="profile-stat-label">Day'+(streak!==1?'s':'')+' Streak</span></div>';
-    html += '</div>';
+    html += '<div class="profile-card-stats">' +
+      '<div class="profile-stat"><span class="profile-stat-num">' + projects.length + '</span><span class="profile-stat-label">Projects</span></div>' +
+      '<div class="profile-stat"><span class="profile-stat-num">' + gwc.total.toLocaleString() + '</span><span class="profile-stat-label">Words Written</span></div>' +
+      '<div class="profile-stat"><span class="profile-stat-num">' + streak + '</span><span class="profile-stat-label">Day' + (streak !== 1 ? 's' : '') + ' Streak</span></div>' +
+    '</div>';
   }
-  html += '</div>'; // end profile card
+  html += '</div>';
+  return html;
+};
 
-  // Analytics Wrapper
-  html += '<div class="dashboard-section-wrapper" style="margin-bottom:20px">';
-  html += '<div class="section-header"><div class="section-title">Writing Analytics</div></div>';
-  html += '<div class="card" style="padding:20px">';
-  // Word count stats
-  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">'+
-    '<div style="text-align:center"><div style="font-size:var(--ts-xl);font-weight:700;color:var(--c-accent)">'+gwc.manuscript.toLocaleString()+'</div><div style="font-size:var(--ts-xs);color:var(--c-text-muted);text-transform:uppercase;margin-top:2px">Manuscript Words</div></div>'+
-    '<div style="text-align:center"><div style="font-size:var(--ts-xl);font-weight:700;color:var(--c-accent)">'+gwc.supplementary.toLocaleString()+'</div><div style="font-size:var(--ts-xs);color:var(--c-text-muted);text-transform:uppercase;margin-top:2px">Supplementary Words</div></div>'+
-    '<div style="text-align:center"><div style="font-size:var(--ts-xl);font-weight:700;color:var(--c-accent)">'+gwc.total.toLocaleString()+'</div><div style="font-size:var(--ts-xs);color:var(--c-text-muted);text-transform:uppercase;margin-top:2px">Total Words</div></div>'+
-  '</div>';
-  // Streak
-  html += '<div style="display:flex;align-items:center;gap:12px;padding-top:16px;border-top:1px solid var(--c-divider)">'+
-    '<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--c-accent);flex-shrink:0">'+(streak>0?
-      '<path d="M12 2C10 5 8 7 8 11a4 4 0 0 0 8 0c0-2-1-4-2-5"/><path d="M12 22c4 0 7-2 7-6 0-3-2-5-3-6"/><path d="M5 16c0 4 3 6 7 6"/><path d="M9 11c0 1 .5 2 1.5 2.5"/>'
-      :'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h6"/><path d="M9 11h4"/>')+
-    '</svg>'+
-    '<div><div style="font-weight:700;font-size:var(--ts-lg)">'+streak+' day'+(streak!==1?'s':'')+'</div><div style="font-size:var(--ts-xs);color:var(--c-text-muted)">Current writing streak</div></div>'+
-  '</div>';
-  html += '</div>'; // end card
-  html += '</div>'; // end wrapper
-
-  // Goals Wrapper
-  var goals = [
-    {label:'Daily', val:gwc.total, target:DAL.state.goalDaily, key:'goalDaily'},
-    {label:'Weekly', val:gwc.total, target:DAL.state.goalWeekly, key:'goalWeekly'},
-    {label:'Monthly', val:gwc.total, target:DAL.state.goalMonthly, key:'goalMonthly'},
-    {label:'6-Month', val:gwc.total, target:DAL.state.goal6Month, key:'goal6Month'},
-    {label:'Yearly', val:gwc.total, target:DAL.state.goalYearly, key:'goalYearly'}
+DAL.dashboardCardBody.totals = function(){
+  var gwc = DAL.getGlobalWordCount();
+  var rows = [
+    { label: 'Manuscript', value: gwc.manuscript },
+    { label: 'Supplementary', value: gwc.supplementary },
+    { label: 'Total', value: gwc.total, strong: true }
   ];
-  html += '<div class="dashboard-section-wrapper">';
-  html += '<div class="section-header"><div class="section-title">Writing Goals</div></div>';
-  html += '<div class="card" style="padding:20px">';
-  goals.forEach(function(g){
-    var pct = g.target > 0 ? Math.min(100, Math.round((g.val/g.target)*100)) : 0;
-    html += '<div style="margin-bottom:12px">'+
-      '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'+
-        '<span style="font-size:var(--ts-sm);font-weight:600">'+g.label+'</span>'+
-        '<span style="font-size:var(--ts-xs);color:var(--c-text-muted)">'+g.val.toLocaleString()+' / <input type="number" style="width:80px;font-size:var(--ts-xs);background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-sm);padding:1px 4px;color:var(--c-text)" value="'+g.target+'" data-goal="'+g.key+'"> words ('+pct+'%)</span>'+
-      '</div>'+
-      '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div>'+
+  var html = '<div class="dash-card-head"><h3 class="dash-card-title">Word Count</h3>' +
+    DAL.infoIcon('Manuscript words are your chapters and scene text. Supplementary words are character sheets, lore entries and plot notes.') + '</div>';
+  html += '<div class="stat-rows">';
+  rows.forEach(function(r){
+    html += '<div class="stat-row' + (r.strong ? ' strong' : '') + '">' +
+      '<span class="stat-row-label">' + r.label + '</span>' +
+      '<span class="stat-row-value">' + r.value.toLocaleString() + '</span>' +
     '</div>';
   });
   html += '</div>';
+
+  // A single bar showing the manuscript share reads faster than the two numbers
+  // alone when what you want to know is how much of the total is actual prose.
+  if(gwc.total > 0){
+    var share = Math.round((gwc.manuscript / gwc.total) * 100);
+    html += '<div class="split-bar" role="img" aria-label="' + share + ' percent of your words are manuscript prose">' +
+      '<span class="split-fill" style="width:' + share + '%"></span>' +
+    '</div>';
+    html += '<p class="split-note">' + share + '% of your words are manuscript prose.</p>';
+  }
+  return html;
+};
+
+DAL.dashboardCardBody.streak = function(){
+  var streak = DAL.getWritingStreak();
+  var flame = streak > 0
+    ? '<path d="M12 2C10 5 8 7 8 11a4 4 0 0 0 8 0c0-2-1-4-2-5"/><path d="M12 22c4 0 7-2 7-6 0-3-2-5-3-6"/><path d="M5 16c0 4 3 6 7 6"/><path d="M9 11c0 1 .5 2 1.5 2.5"/>'
+    : '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h6"/><path d="M9 11h4"/>';
+  var html = '<div class="dash-card-head"><h3 class="dash-card-title">Writing Streak</h3></div>';
+  html += '<div class="streak-block' + (streak > 0 ? ' lit' : '') + '">' +
+    '<svg class="streak-flame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">' + flame + '</svg>' +
+    '<div class="streak-text">' +
+      '<div class="streak-num">' + streak + '<span class="streak-unit">day' + (streak !== 1 ? 's' : '') + '</span></div>' +
+      '<div class="streak-note">' + (streak > 0 ? 'Consecutive days with words written' : 'Write anything today to start a streak') + '</div>' +
+    '</div>' +
+  '</div>';
+
+  var best = DAL.getLongestStreak();
+  if(best > 0){
+    var record = streak > 0 && streak >= best;
+    html += '<div class="streak-best">' +
+      (record ? 'Your best run yet' : 'Best run: ' + best + ' day' + (best === 1 ? '' : 's')) +
+    '</div>';
+  }
+  return html;
+};
+
+/* --- Project goals ---------------------------------------------------------
+   A target word count and optional deadline per project. Finished goals move to
+   their own list so the working list stays about what is still ahead. */
+DAL.dashboardCardBody.projectGoals = function(){
+  var projects = DAL.state.projectOrder.map(function(id){ return DAL.state.projects[id]; }).filter(Boolean);
+
+  var html = '<div class="dash-card-head"><h3 class="dash-card-title">Project Goals</h3>' +
+    DAL.infoIcon('Set a target word count for a project, and a deadline if you want one. The pace shown is how many words a day would finish it on time.') +
+    '</div>';
+
+  if(!projects.length){
+    html += '<p class="pg-empty">Create a project and you can set a target word count for it here.</p>';
+    return html;
+  }
+
+  var active = [], done = [];
+  projects.forEach(function(p){
+    var st = DAL.projectGoalStats(p);
+    (st.done ? done : active).push({ proj: p, st: st });
+  });
+
+  html += '<div class="pg-list">';
+  active.forEach(function(row){ html += DAL.renderProjectGoalRow(row.proj, row.st); });
   html += '</div>';
+
+  if(done.length){
+    html += '<div class="pg-done-group">' +
+      '<div class="pg-group-title">Reached <span class="pg-count">' + done.length + '</span></div>' +
+      '<div class="pg-list">';
+    done.forEach(function(row){ html += DAL.renderProjectGoalRow(row.proj, row.st); });
+    html += '</div></div>';
+  }
+  return html;
+};
+
+DAL.renderProjectGoalRow = function(proj, st){
+  var html = '<div class="pg-row' + (st.done ? ' done' : '') + (st.overdue ? ' overdue' : '') + '">';
+
+  html += '<div class="pg-head">' +
+    '<button class="pg-name" data-action="open-project" data-pid="' + proj.id + '">' + DAL.escapeHtml(proj.name) + '</button>' +
+    (st.done ? '<span class="badge success">Reached</span>' : '') +
+    (st.overdue ? '<span class="badge warning">Past deadline</span>' : '') +
+  '</div>';
+
+  html += '<div class="pg-fields">' +
+    '<label class="pg-field"><span class="pg-field-label">Target words</span>' +
+      '<input type="number" class="pg-input" min="0" step="1000" value="' + (st.target || '') + '" placeholder="0" ' +
+        'data-project-goal="target" data-pid="' + proj.id + '" aria-label="Target word count for ' + DAL.escapeHtml(proj.name) + '">' +
+    '</label>' +
+    '<label class="pg-field"><span class="pg-field-label">Deadline</span>' +
+      '<input type="date" class="pg-input" value="' + DAL.escapeHtml(st.deadline) + '" ' +
+        'data-project-goal="deadline" data-pid="' + proj.id + '" aria-label="Deadline for ' + DAL.escapeHtml(proj.name) + '">' +
+    '</label>' +
+  '</div>';
+
+  if(!st.set){
+    html += '<p class="pg-hint">' + DAL.escapeHtml(st.words.toLocaleString()) + ' words written. Set a target to track progress.</p>';
+    return html + '</div>';
+  }
+
+  html += '<div class="progress-bar"><div class="progress-fill" style="width:' + st.percent + '%"></div></div>';
+
+  var facts = [];
+  facts.push('<span class="pg-fact"><strong>' + st.words.toLocaleString() + '</strong> of ' + st.target.toLocaleString() + ' words</span>');
+  facts.push('<span class="pg-fact"><strong>' + st.percent + '%</strong></span>');
+  if(st.done){
+    facts.push('<span class="pg-fact">Target reached</span>');
+  } else {
+    facts.push('<span class="pg-fact"><strong>' + st.remaining.toLocaleString() + '</strong> to go</span>');
+    if(st.daysLeft !== null){
+      if(st.daysLeft >= 1){
+        facts.push('<span class="pg-fact"><strong>' + st.daysLeft.toLocaleString() + '</strong> day' + (st.daysLeft === 1 ? '' : 's') + ' left</span>');
+        facts.push('<span class="pg-fact"><strong>' + st.perDay.toLocaleString() + '</strong> words a day to finish</span>');
+      } else {
+        facts.push('<span class="pg-fact">Deadline passed ' + Math.abs(st.daysLeft - 1).toLocaleString() + ' day' + (Math.abs(st.daysLeft - 1) === 1 ? '' : 's') + ' ago</span>');
+      }
+    }
+  }
+  html += '<div class="pg-facts">' + facts.join('') + '</div>';
+
+  return html + '</div>';
+};
+
+/* --- Word output bar graph -------------------------------------------------
+   Hand-built inline SVG. Colour comes from CSS custom properties rather than
+   literal hex, so the chart follows the active theme without a redraw, and the
+   geometry is plain arithmetic so there is nothing to load. */
+/* Two geometries rather than one stretched drawing: an SVG scales uniformly, so
+   a wide viewBox squeezed into a phone-width card would shrink its own labels
+   into illegibility. The viewport bucket already re-renders when it changes. */
+DAL.CHART_SIZES = {
+  wide:    { W: 760, H: 240, padL: 52, padR: 12, padT: 12, padB: 30, maxLabels: 12 },
+  compact: { W: 420, H: 300, padL: 44, padR: 8,  padT: 14, padB: 34, maxLabels: 7 }
+};
+
+DAL.chartSize = function(){
+  var bucket = document.documentElement.getAttribute('data-viewport');
+  return bucket === 'compact' ? DAL.CHART_SIZES.compact : DAL.CHART_SIZES.wide;
+};
+
+/* Rounds a maximum up to a readable axis top: 1, 2 or 5 times a power of ten. */
+DAL.niceCeil = function(v){
+  if(v <= 0) return 100;
+  var mag = Math.pow(10, Math.floor(Math.log(v) / Math.LN10));
+  var n = v / mag;
+  var step = n <= 1 ? 1 : (n <= 2 ? 2 : (n <= 5 ? 5 : 10));
+  return step * mag;
+};
+
+DAL.dashboardCardBody.wordGraph = function(){
+  var data = DAL.wordBuckets(DAL.state.analyticsRange);
+
+  var html = '<div class="dash-card-head"><h3 class="dash-card-title">Word Output</h3>' +
+    DAL.infoIcon('Words written in each period, taken from your daily writing history. Days before you started using Draft A Lore show as empty.') +
+    '</div>';
+
+  html += '<div class="chart-controls" role="group" aria-label="Chart range">';
+  DAL.ANALYTICS_RANGES.forEach(function(r){
+    var on = r.id === data.range.id;
+    html += '<button class="chart-range' + (on ? ' active' : '') + '" data-action="analytics-range" data-range="' + r.id + '" aria-pressed="' + on + '">' + r.label + '</button>';
+  });
+  html += '</div>';
+
+  html += '<div class="chart-summary">' +
+    '<div class="chart-stat"><span class="chart-stat-num">' + data.total.toLocaleString() + '</span><span class="chart-stat-label">words in range</span></div>' +
+    '<div class="chart-stat"><span class="chart-stat-num">' + data.average.toLocaleString() + '</span><span class="chart-stat-label">per day average</span></div>' +
+  '</div>';
+
+  if(data.total === 0){
+    html += '<div class="chart-empty">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 20h18"/><rect x="5" y="13" width="3" height="5" rx="1"/><rect x="11" y="9" width="3" height="9" rx="1"/><rect x="17" y="15" width="3" height="3" rx="1"/></svg>' +
+      '<p>No words recorded in this range yet. Anything you write from here on shows up the same day.</p>' +
+    '</div>';
+    return html;
+  }
+
+  html += '<div class="chart-readout" data-readout="wordGraph" aria-live="polite">Hover or tap a bar for its exact count.</div>';
+  html += DAL.renderWordGraphSvg(data);
+  return html;
+};
+
+DAL.renderWordGraphSvg = function(data){
+  var m = DAL.chartSize();
+  var W = m.W, H = m.H;
+  var padL = m.padL, padR = m.padR, padT = m.padT, padB = m.padB;
+  var plotW = W - padL - padR, plotH = H - padT - padB;
+  // Deriving the step first and the top from it keeps every gridline on a round
+  // number. Rounding the top first instead produces labels like 1.3k and 3.8k.
+  var peak = Math.max.apply(null, data.buckets.map(function(b){ return b.words; }));
+  var step = DAL.niceCeil(peak / 4);
+  var bands = Math.max(1, Math.ceil(peak / step));
+  var top = step * bands;
+  var n = data.buckets.length;
+  var slot = plotW / n;
+  var barW = Math.max(3, Math.min(38, slot * 0.68));
+  var unitWord = data.range.unit === 'day' ? 'day' : (data.range.unit === 'week' ? 'week' : 'month');
+
+  var svg = '<svg class="chart-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" ' +
+    'aria-label="Words written per ' + unitWord + ' over the last ' + data.range.label + ', ' + data.total.toLocaleString() + ' words total">';
+
+  // Horizontal gridlines with value labels, one per step.
+  for(var g = 0; g <= bands; g++){
+    var val = step * g;
+    var y = padT + plotH - (plotH * (g / bands));
+    svg += '<line class="chart-grid" x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + y.toFixed(1) + '"/>';
+    svg += '<text class="chart-axis-label" x="' + (padL - 8) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end">' + DAL.compactNumber(val) + '</text>';
+  }
+  // The baseline is drawn last of the axis furniture so it sits above the grid.
+  svg += '<line class="chart-baseline" x1="' + padL + '" y1="' + (padT + plotH) + '" x2="' + (W - padR) + '" y2="' + (padT + plotH) + '"/>';
+
+  data.buckets.forEach(function(b, i){
+    var x = padL + slot * i + (slot - barW) / 2;
+    var h = top > 0 ? (b.words / top) * plotH : 0;
+    // Bars with a real value keep a sliver of height so a small day is still
+    // visible rather than collapsing into the baseline.
+    if(b.words > 0) h = Math.max(2, h);
+    var y = padT + plotH - h;
+    var label = b.full + ': ' + b.words.toLocaleString() + ' word' + (b.words === 1 ? '' : 's');
+
+    svg += '<g class="chart-bar-group" data-bar="' + i + '" data-label="' + DAL.escapeHtml(label) + '" tabindex="0" role="listitem" aria-label="' + DAL.escapeHtml(label) + '">';
+    // A full-height transparent target makes short bars just as easy to hit.
+    svg += '<rect class="chart-hit" x="' + (padL + slot * i).toFixed(1) + '" y="' + padT + '" width="' + slot.toFixed(1) + '" height="' + plotH + '"/>';
+    svg += '<title>' + DAL.escapeHtml(label) + '</title>';
+    if(b.words > 0){
+      svg += '<rect class="chart-bar" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="' + Math.min(3, barW / 3).toFixed(1) + '"/>';
+    }
+    // Value labels are printed only when there is room for them; past about a
+    // dozen bars they overlap into noise, and the readout covers the rest.
+    if(n <= m.maxLabels && b.words > 0){
+      svg += '<text class="chart-value" x="' + (x + barW / 2).toFixed(1) + '" y="' + Math.max(padT + 9, y - 5).toFixed(1) + '" text-anchor="middle">' + DAL.compactNumber(b.words) + '</text>';
+    }
+    if(b.axis){
+      svg += '<text class="chart-axis-label" x="' + (x + barW / 2).toFixed(1) + '" y="' + (padT + plotH + 18) + '" text-anchor="middle">' + DAL.escapeHtml(b.axis) + '</text>';
+    }
+    svg += '</g>';
+  });
+
+  svg += '</svg>';
+  return svg;
+};
+
+/* Axis and value labels need to stay short, so thousands collapse to 1.2k. */
+DAL.compactNumber = function(v){
+  v = Math.round(v);
+  if(v >= 10000) return Math.round(v / 1000) + 'k';
+  if(v >= 1000) return (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  return String(v);
+};
+
+/* --- 12-week activity heatmap --------------------------------------------- */
+DAL.HEATMAP_WEEKS = 12;
+
+DAL.dashboardCardBody.heatmap = function(){
+  var weekStart = DAL.goalPeriodStart('weekly');
+  var first = new Date(weekStart); first.setDate(first.getDate() - (DAL.HEATMAP_WEEKS - 1) * 7);
+  var today = new Date(); today.setHours(0,0,0,0);
+
+  var weeks = [], peak = 0, activeDays = 0, total = 0;
+  for(var w = 0; w < DAL.HEATMAP_WEEKS; w++){
+    var days = [];
+    for(var d = 0; d < 7; d++){
+      var date = new Date(first);
+      date.setDate(date.getDate() + w * 7 + d);
+      var future = date > today;
+      var words = future ? 0 : DAL.dayWords(DAL.dateKey(date)).total;
+      if(words > peak) peak = words;
+      if(words > 0){ activeDays++; total += words; }
+      days.push({ date: date, words: words, future: future });
+    }
+    weeks.push(days);
+  }
+
+  var html = '<div class="dash-card-head"><h3 class="dash-card-title">Writing Activity</h3>' +
+    DAL.infoIcon('One square per day over the last 12 weeks. Darker squares are days you wrote more.') +
+    '</div>';
+
+  html += '<div class="chart-summary">' +
+    '<div class="chart-stat"><span class="chart-stat-num">' + activeDays + '</span><span class="chart-stat-label">day' + (activeDays === 1 ? '' : 's') + ' written in</span></div>' +
+    '<div class="chart-stat"><span class="chart-stat-num">' + peak.toLocaleString() + '</span><span class="chart-stat-label">best day</span></div>' +
+  '</div>';
+
+  if(total === 0){
+    html += '<div class="chart-empty">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 2v4M16 2v4"/></svg>' +
+      '<p>Nothing to map yet. Each day you write fills in a square here.</p>' +
+    '</div>';
+    return html;
+  }
+
+  html += '<div class="chart-readout" data-readout="heatmap" aria-live="polite">Hover or tap a square for that day.</div>';
+  html += DAL.renderHeatmapSvg(weeks, peak);
+  html += DAL.renderHeatmapLegend();
+  return html;
+};
+
+/* Five steps rather than a continuous ramp: distinguishable at a glance, and
+   the lightest step still reads as "wrote something" against an empty day. */
+DAL.heatLevel = function(words, peak){
+  if(words <= 0) return 0;
+  if(peak <= 0) return 1;
+  var r = words / peak;
+  if(r <= 0.25) return 1;
+  if(r <= 0.5) return 2;
+  if(r <= 0.75) return 3;
+  return 4;
+};
+
+DAL.renderHeatmapSvg = function(weeks, peak){
+  // Geometry is sized so the SVG renders close to 1:1 at its capped width; a
+  // smaller viewBox would scale the label text up with it.
+  var cell = 26, gap = 6, labelW = 40, monthH = 26;
+  var W = labelW + weeks.length * (cell + gap);
+  var H = monthH + 7 * (cell + gap);
+  var dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+  var svg = '<svg class="heatmap-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" ' +
+    'aria-label="Daily writing activity for the last ' + weeks.length + ' weeks">';
+
+  // Month markers sit above the first column that begins a new month.
+  var lastMonth = -1;
+  weeks.forEach(function(days, w){
+    var m = days[0].date.getMonth();
+    if(m !== lastMonth){
+      lastMonth = m;
+      svg += '<text class="chart-axis-label" x="' + (labelW + w * (cell + gap)) + '" y="' + (monthH - 9) + '">' + DAL.MONTHS_SHORT[m] + '</text>';
+    }
+  });
+
+  // Only alternate weekday labels are printed; all seven at this cell size
+  // would collide.
+  [0, 2, 4, 6].forEach(function(d){
+    svg += '<text class="chart-axis-label" x="' + (labelW - 9) + '" y="' + (monthH + d * (cell + gap) + cell / 2 + 4) + '" text-anchor="end">' + dayNames[d][0] + '</text>';
+  });
+
+  weeks.forEach(function(days, w){
+    days.forEach(function(day, d){
+      if(day.future) return;
+      var lvl = DAL.heatLevel(day.words, peak);
+      var label = DAL.longDate(day.date) + ': ' + day.words.toLocaleString() + ' word' + (day.words === 1 ? '' : 's');
+      svg += '<g class="heat-group" data-label="' + DAL.escapeHtml(label) + '" tabindex="0" role="listitem" aria-label="' + DAL.escapeHtml(label) + '">' +
+        '<title>' + DAL.escapeHtml(label) + '</title>' +
+        '<rect class="heat-cell heat-' + lvl + '" x="' + (labelW + w * (cell + gap)) + '" y="' + (monthH + d * (cell + gap)) + '" width="' + cell + '" height="' + cell + '" rx="5"/>' +
+      '</g>';
+    });
+  });
+
+  svg += '</svg>';
+  return svg;
+};
+
+DAL.renderHeatmapLegend = function(){
+  var html = '<div class="heat-legend"><span class="heat-legend-label">Less</span>';
+  for(var i = 0; i <= 4; i++){
+    html += '<span class="heat-swatch heat-' + i + '" aria-hidden="true"></span>';
+  }
+  html += '<span class="heat-legend-label">More</span></div>';
+  return html;
+};
+
+/* Goal progress. Each row counts only the words written inside its own calendar
+   period, so a goal empties again when that period rolls over. */
+DAL.dashboardCardBody.goals = function(){
+  var goals = [
+    { label: 'Daily',   period: 'daily',   target: DAL.state.goalDaily,   key: 'goalDaily' },
+    { label: 'Weekly',  period: 'weekly',  target: DAL.state.goalWeekly,  key: 'goalWeekly' },
+    { label: 'Monthly', period: 'monthly', target: DAL.state.goalMonthly, key: 'goalMonthly' },
+    { label: '6-Month', period: 'half',    target: DAL.state.goal6Month,  key: 'goal6Month' },
+    { label: 'Yearly',  period: 'yearly',  target: DAL.state.goalYearly,  key: 'goalYearly' }
+  ];
+  var html = '<div class="dash-card-head"><h3 class="dash-card-title">Writing Goals</h3>' +
+    DAL.infoIcon('Each goal counts the words you write inside that period only, and starts again when the period does.') +
+    '</div>';
+  html += '<div class="goal-list">';
+  goals.forEach(function(g){
+    var val = DAL.goalProgress(g.period).total;
+    var target = g.target > 0 ? g.target : 0;
+    var pct = target > 0 ? Math.min(100, Math.round((val / target) * 100)) : 0;
+    var met = target > 0 && val >= target;
+    html += '<div class="goal-row' + (met ? ' met' : '') + '">' +
+      '<div class="goal-row-head">' +
+        '<span class="goal-label">' + g.label +
+          '<span class="goal-period">' + DAL.escapeHtml(DAL.goalPeriodLabel(g.period)) + '</span>' +
+        '</span>' +
+        '<span class="goal-numbers">' +
+          '<span class="goal-current">' + val.toLocaleString() + '</span>' +
+          '<span class="goal-sep">/</span>' +
+          '<input type="number" class="goal-target" min="0" step="100" value="' + g.target + '" data-goal="' + g.key + '" aria-label="' + g.label + ' word goal">' +
+          '<span class="goal-pct">' + (met ? 'Met' : pct + '%') + '</span>' +
+        '</span>' +
+      '</div>' +
+      '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+    '</div>';
+  });
   html += '</div>';
   return html;
 };
@@ -126,24 +620,24 @@ DAL.renderProjects = function(){
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>'+
       '<h3>No Projects Yet</h3><p>Create your first project to start writing.</p>'+
       '<button class="btn primary" data-action="new-project">Create Your First Project</button>'+
-      '<div style="margin-top:8px"><button class="btn sm" data-action="import-project">Import from JSON</button></div>'+
+      '<div style="margin-top:8px"><button class="btn sm" data-action="import-project">Import project (.json)</button></div>'+
     '</div>';
   }
 
   var html = '<div class="section-header"><div class="section-title">Projects</div>'+
     '<div style="display:flex;gap:8px">'+
-      '<button class="btn sm" data-action="import-project" data-tip="Import a project from JSON">Import</button>'+
+      '<button class="btn sm" data-action="import-project">Import project (.json)</button>'+
       '<button class="btn primary" data-action="new-project">New Project</button>'+
     '</div></div>';
   html += '<div class="card-grid">';
   projects.forEach(function(p){
     var wc = DAL.getProjectWordCount(p);
     var typeLabel = p.type === 'novel' ? 'Novel' : (p.type === 'rpg' ? 'RPG Adventure' : 'Dual');
-    html += '<div class="card hoverable" style="cursor:pointer" data-action="open-project" data-pid="'+p.id+'" data-tip="Open '+DAL.escapeHtml(p.name)+'">'+
+    html += '<div class="card hoverable" style="cursor:pointer" data-action="open-project" data-pid="'+p.id+'">'+
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'+
         '<div style="font-weight:700;font-size:var(--ts-base)">'+DAL.escapeHtml(p.name)+'</div>'+
         '<div style="display:flex;gap:4px">'+
-          '<button class="btn icon sm" data-action="project-settings" data-pid="'+p.id+'" data-tip="Edit settings" style="width:24px;height:24px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>'+
+          '<button class="btn icon sm" data-action="project-settings" data-pid="'+p.id+'" style="width:24px;height:24px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>'+
         '</div>'+
       '</div>'+
       '<div style="display:flex;gap:4px;margin-bottom:8px">'+
@@ -153,13 +647,28 @@ DAL.renderProjects = function(){
       '<div style="font-size:var(--ts-xs);color:var(--c-text-muted)">'+wc.manuscript+' manuscript words</div>'+
       '<div style="font-size:var(--ts-xs);color:var(--c-text-faint);margin-top:4px">Edited '+DAL.formatDate(p.updatedAt)+'</div>'+
       '<div style="display:flex;gap:4px;margin-top:8px">'+
-        '<button class="btn sm" data-action="export-project" data-pid="'+p.id+'" data-tip="Export project">Export</button>'+
-        '<button class="btn sm danger" data-action="delete-project" data-pid="'+p.id+'" data-tip="Delete project">Delete</button>'+
+        '<button class="btn sm" data-action="export-project" data-pid="'+p.id+'">Export project</button>'+
+        '<button class="btn sm danger" data-action="delete-project" data-pid="'+p.id+'">Delete</button>'+
       '</div>'+
     '</div>';
   });
   html += '</div>';
   return html;
+};
+
+DAL.showSaveAsModal = function(){
+  if(!DAL.currentProjectId) return;
+  var p = DAL.state.projects[DAL.currentProjectId];
+  if(!p) return;
+  // Suggest "Name - copy-1", bumping the number if that name is already taken.
+  var base = p.name.replace(/ - copy-\d+$/, '');
+  var n = 1;
+  var taken = DAL.state.projectOrder.map(function(id){ return DAL.state.projects[id] && DAL.state.projects[id].name; });
+  var suggested = base + ' - copy-' + n;
+  while(taken.indexOf(suggested) !== -1){ n++; suggested = base + ' - copy-' + n; }
+  var html = '<p style="font-size:var(--ts-xs);color:var(--c-text-faint);margin-bottom:10px">Creates a new, independent copy of "'+DAL.escapeHtml(p.name)+'" so you can branch off without touching the original.</p>'+
+    '<div class="form-group"><label class="form-label">New Project Name</label><input class="form-input" id="saNewName" value="'+DAL.escapeHtml(suggested)+'"></div>';
+  DAL.modal('Save As', html, { footer: '<button class="btn" data-action="close-modal">Cancel</button><button class="btn primary" data-action="save-as-confirm">Save As</button>' });
 };
 
 DAL.showNewProjectModal = function(){
@@ -171,7 +680,7 @@ DAL.showNewProjectModal = function(){
     '</select></div>'+
     '<div class="form-group"><label class="form-label">Folder Connection</label>'+
     '<div style="display:flex;gap:8px;align-items:center">'+
-      '<button class="btn sm" data-action="link-folder-new" data-tip="Link to a folder on your PC (Chrome/Edge)">Link to folder</button>'+
+      '<button class="btn sm" data-action="link-folder-new">Link to folder</button>'+
       '<span style="font-size:var(--ts-xs);color:var(--c-text-faint)" id="npFolderName">No folder linked</span>'+
     '</div></div>';
   DAL.modal('Create New Project', html, { footer: '<button class="btn" data-action="close-modal">Cancel</button><button class="btn primary" data-action="create-project">Create Project</button>' });
@@ -186,7 +695,7 @@ DAL.showProjectSettingsModal = function(pid){
     '</select></div>'+
     '<div class="form-group"><label class="form-label">Folder Connection</label>'+
     '<div style="display:flex;gap:8px;align-items:center">'+
-      '<button class="btn sm" data-action="link-folder" data-pid="'+pid+'" data-tip="Link folder">Link Folder</button>'+
+      '<button class="btn sm" data-action="link-folder" data-pid="'+pid+'">Link Folder</button>'+
       '<span style="font-size:var(--ts-xs);color:var(--c-text-faint)">'+(p.linkedFolderName||'Not linked')+'</span>'+
     '</div></div>'+
     '<div class="form-group"><label class="form-label">Cover</label>'+
@@ -210,36 +719,22 @@ DAL.showDeleteConfirm = function(pid, step){
 
 /* --- Settings --- */
 DAL.renderSettings = function(){
-  var themes = [
-    {id:'aurora',name:'Aurora',desc:'Midnight purple with pink-blue gradient brand'},
-    {id:'dark',name:'Dark',desc:'Deep charcoal with warm gold accent'},
-    {id:'light',name:'Light',desc:'Soft grey with warm brown accent'},
-    {id:'fantasy-dark',name:'Fantasy Dark',desc:'Near-black with forest green and burgundy'},
-    {id:'fantasy-light',name:'Fantasy Light',desc:'Warm parchment with sage and rose'}
-  ];
   var html = '<div style="max-width:700px;margin:0 auto">';
 
   // Theme
   html += '<div class="section-header"><div class="section-title">Theme</div></div>';
-  html += '<div class="card-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:20px">';
-  themes.forEach(function(t){
+  html += '<div class="theme-grid">';
+  DAL.THEMES.forEach(function(t){
     var active = DAL.state.appTheme === t.id;
-    html += '<div class="card'+(active?'':' hoverable')+'" data-action="set-theme" data-theme="'+t.id+'" style="cursor:pointer;border:'+ (active?'2px solid var(--c-accent)':'1px solid var(--c-border)')+'">'+
-      '<div style="font-weight:700;margin-bottom:4px">'+t.name+'</div>'+
-      '<div style="font-size:var(--ts-xs);color:var(--c-text-muted);margin-bottom:8px">'+t.desc+'</div>'+
-      '<div style="display:flex;gap:4px"><div style="width:20px;height:20px;border-radius:4px;background:';
-    if(t.id==='aurora') html += '#0a0814';
-    else if(t.id==='dark') html += '#0F1116';
-    else if(t.id==='light') html += '#EDEAE3';
-    else if(t.id==='fantasy-dark') html += '#0C0E0A';
-    else html += '#F0E6CC';
-    html += '"></div><div style="width:20px;height:20px;border-radius:4px;background:';
-    if(t.id==='aurora') html += 'linear-gradient(135deg,#6366F1,#8B5CF6,#EC4899)';
-    else if(t.id==='dark') html += '#C9A24B';
-    else if(t.id==='light') html += '#8E6B1E';
-    else if(t.id==='fantasy-dark') html += '#A8821E';
-    else html += '#7A5E1E';
-    html += '"></div></div></div>';
+    // Swatch colours come from the theme's own palette tokens in styles.css.
+    html += '<div class="card theme-option'+(active?' active':' hoverable')+'" data-action="set-theme" data-theme="'+t.id+'" data-swatch="'+t.id+'" role="button" tabindex="0" aria-pressed="'+(active?'true':'false')+'">'+
+      '<div class="theme-option-head">'+
+        '<span class="theme-chip theme-chip-bg" aria-hidden="true"></span>'+
+        '<span class="theme-chip theme-chip-grad" aria-hidden="true"></span>'+
+        '<span class="theme-option-name">'+DAL.escapeHtml(t.name)+'</span>'+
+      '</div>'+
+      '<div class="theme-option-desc">'+DAL.escapeHtml(t.desc)+'</div>'+
+    '</div>';
   });
   html += '</div>';
 
@@ -252,8 +747,8 @@ DAL.renderSettings = function(){
     '<div class="author-avatar-preview">'+(DAL.state.authorAvatar?'<img src="'+DAL.state.authorAvatar+'">':DAL.escapeHtml((DAL.state.authorName||'?').charAt(0).toUpperCase()))+'</div>'+
     '<div>'+
       '<input type="file" id="authorAvatarInput" accept="image/*" style="display:none">'+
-      '<button class="btn sm" data-action="upload-author-avatar" data-tip="Upload your author photo">Upload Photo</button>'+
-      (DAL.state.authorAvatar?' <button class="btn sm danger" data-action="remove-author-avatar" data-tip="Remove your photo">Remove</button>':'')+
+      '<button class="btn sm" data-action="upload-author-avatar">Upload Photo</button>'+
+      (DAL.state.authorAvatar?' <button class="btn sm danger" data-action="remove-author-avatar">Remove</button>':'')+
     '</div></div></div>';
   html += '<div class="form-group"><label class="form-label">Author Name (or Pen Name)</label><input class="form-input" id="setAuthorName" value="'+DAL.escapeHtml(DAL.state.authorName||'')+'" placeholder="Your name or alias"></div>'+
     '<div class="form-group"><label class="form-label">Meet the Author</label><textarea class="form-textarea" id="setAuthorBio" placeholder="Write a short bio that readers will see...">'+DAL.escapeHtml(DAL.state.authorBio||'')+'</textarea></div>'+
@@ -265,7 +760,7 @@ DAL.renderSettings = function(){
   html += '<div class="card" style="margin-bottom:20px">'+
     '<p style="font-size:var(--ts-sm);color:var(--c-text-muted);margin-bottom:12px">Import .ttf, .otf, .woff, or .woff2 fonts. Available in all editors.</p>'+
     '<input type="file" id="fontImport" accept=".ttf,.otf,.woff,.woff2" style="display:none">'+
-    '<button class="btn" data-action="import-font" data-tip="Import a custom font file">Import Font</button>'+
+    '<button class="btn" data-action="import-font">Import Font</button>'+
     '<div style="margin-top:12px">';
   if(DAL.state.customFonts.length){
     DAL.state.customFonts.forEach(function(f,i){
@@ -278,24 +773,57 @@ DAL.renderSettings = function(){
   }
   html += '</div></div>';
 
-  // Backup
+  // Online Fonts (offline-first: these load only when a connection is live)
+  var online = DAL.isOnline();
+  html += '<div class="card" style="margin-bottom:20px">'+
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+
+      '<span style="width:9px;height:9px;border-radius:999px;background:'+(online?'var(--c-success,#3ba55c)':'var(--c-text-faint)')+';flex-shrink:0"></span>'+
+      '<strong style="font-size:var(--ts-sm)">'+(online?'Online':'Offline')+'</strong>'+
+    '</div>'+
+    '<p style="font-size:var(--ts-sm);color:var(--c-text-muted);margin-bottom:10px;line-height:1.55">The app works fully offline. When you\'re connected, extra fonts become available in the Manuscript editor\'s font menu. A chosen font falls back to a readable system serif if you go offline.</p>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+  DAL.ONLINE_FONTS.forEach(function(f){
+    html += '<span style="font-family:\''+f.family+'\', Georgia, serif;font-size:var(--ts-sm);padding:5px 10px;border:1px solid var(--c-border);border-radius:999px;'+(online?'':'opacity:.45')+'">'+DAL.escapeHtml(f.name)+'</span>';
+  });
+  html += '</div>';
+  if(!online){
+    html += '<div style="font-size:var(--ts-xs);color:var(--c-text-faint);margin-top:10px">Connect to the internet to load and use these fonts.</div>';
+  }
+  html += '</div>';
+
+  html += '<div class="section-header"><div class="section-title">Saving</div></div>';
+  html += '<div class="card" style="margin-bottom:20px">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">'+
+      '<div style="min-width:180px;flex:1">'+
+        '<div style="font-weight:600;margin-bottom:2px">Automatic saving</div>'+
+        '<div style="font-size:var(--ts-xs);color:var(--c-text-faint);line-height:1.5">Automatic saving covers manuscript typing. Project actions save immediately. Pending work saves when the app closes.</div>'+
+      '</div>'+
+      '<button class="switch" data-action="toggle-autosave" aria-pressed="'+DAL.state.autosave+'" aria-label="Toggle automatic saving of manuscript typing"><span class="track"></span></button>'+
+    '</div>'+
+    '<div style="border-top:1px solid var(--c-divider);padding-top:12px;margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
+      '<button class="btn" data-action="manual-save">Save Now</button>'+
+      '<span style="font-size:var(--ts-xs);color:var(--c-text-faint)">Writes all projects and settings to this device immediately.</span>'+
+    '</div>'+
+  '</div>';
+
   html += '<div class="section-header"><div class="section-title">Backup & Data</div></div>';
   html += '<div class="card" style="margin-bottom:20px">'+
+    '<p class="export-group-note">A workspace backup holds every project plus your settings. Restoring one replaces everything currently on this device. To move a single project instead, use its Export tool and then Import project.</p>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
-      '<button class="btn" data-action="backup-workspace" data-tip="Download all data as JSON">Download Backup</button>'+
-      '<button class="btn" data-action="restore-workspace" data-tip="Restore from a backup JSON">Restore Backup</button>'+
+      '<button class="btn" data-action="backup-workspace">Download backup of all projects (.json)</button>'+
+      '<button class="btn" data-action="restore-workspace">Restore backup of all projects…</button>'+
       '<input type="file" id="restoreInput" accept=".json" style="display:none">'+
     '</div>'+
     '<div style="border-top:1px solid var(--c-divider);padding-top:12px">'+
-      '<button class="btn danger" data-action="clear-data" data-tip="Permanently delete all data">Clear All Data</button>'+
+      '<button class="btn danger" data-action="clear-data">Clear All Data</button>'+
     '</div></div>';
 
   // Version + credit. This attribution is required by the project license
-  // (see LICENSE.md, Supplemental Term S4) and must stay visible in forks.
+  // (see LICENSE.md, Supplemental Term S3) and must stay visible in forks.
   html += '<div style="text-align:center;font-size:var(--ts-xs);color:var(--c-text-faint);padding:16px;line-height:1.7">'+
     'Draft A Lore v1.0.0<br>'+
     'Created by Daymien Vanhorn<br>'+
-    '<a href="https://github.com/Hexxis-cmd/Draft-A-Lore" target="_blank" rel="noopener" style="color:var(--c-text-faint)">github.com/Hexxis-cmd/Draft-A-Lore</a><br>'+
+    '<a href="https://github.com/Hexxis-cmd/Draft-A-Lore" target="_blank" rel="noopener" style="color:var(--c-text-faint)">Draft A Lore on GitHub</a><br>'+
     'Free for noncommercial use<br>Commercial use requires a license'+
   '</div>';
   html += '</div>';
@@ -316,7 +844,7 @@ DAL.renderLibrary = function(){
   projects.forEach(function(p, i){
     var color = colors[i % colors.length];
     var author = p.cover.author || (DAL.state.autoFillAuthor ? DAL.state.authorName : '');
-    html += '<div class="book-spine" data-action="open-reader" data-pid="'+p.id+'" style="background:linear-gradient(135deg,'+color+','+color+'88);color:#fff" data-tip="Read '+DAL.escapeHtml(p.name)+'">'+
+    html += '<div class="book-spine" data-action="open-reader" data-pid="'+p.id+'" style="background:linear-gradient(135deg,'+color+','+color+'88);color:#fff">'+
       '<div class="book-spine-title">'+DAL.escapeHtml(p.cover.title||p.name)+'</div>'+
       (author ? '<div class="book-spine-author">'+DAL.escapeHtml(author)+'</div>' : '')+
     '</div>';
@@ -350,7 +878,7 @@ DAL.renderBookReader = function(pid){
 
   var html = '<div class="book-reader" data-book-theme="'+DAL.readerTheme+'">';
   html += '<div class="book-reader-toolbar">'+
-    '<button class="btn sm" data-action="close-reader" data-tip="Close reader">← Back to Library</button>'+
+    '<button class="btn sm" data-action="close-reader">← Back to Library</button>'+
     '<div style="margin-left:auto;display:flex;gap:4px;align-items:center">'+
       '<select class="form-select" style="width:auto;font-size:var(--ts-xs)" id="readerThemeSelect" data-action="reader-theme">'+
         '<option value="parchment"'+(DAL.readerTheme==='parchment'?' selected':'')+'>Parchment</option>'+
@@ -372,6 +900,69 @@ DAL.renderBookReader = function(pid){
 DAL.handleClick = function(action, el, e){
   // Dashboard/Settings field changes
   if(action === 'set-theme'){ DAL.setTheme(el.getAttribute('data-theme')); DAL.render(); return; }
+
+  /* --- Dashboard organize mode --- */
+  if(action === 'dash-organize-on'){ DAL.organizeDashboard = true; DAL.render(); return; }
+  if(action === 'dash-organize-off'){ DAL.organizeDashboard = false; DAL.render(); return; }
+
+  if(action === 'dash-move'){
+    var moveId = el.getAttribute('data-card');
+    var dir = parseInt(el.getAttribute('data-dir'), 10);
+    if(DAL.moveDashboardCard(moveId, dir)){
+      DAL.render();
+      // Keep the keyboard on the button that was just pressed, so a card can be
+      // moved several positions without hunting for focus after each re-render.
+      var again = document.querySelector('[data-action="dash-move"][data-card="' + moveId + '"][data-dir="' + dir + '"]');
+      if(again && !again.disabled) again.focus();
+      else {
+        var opposite = document.querySelector('[data-action="dash-move"][data-card="' + moveId + '"][data-dir="' + (-dir) + '"]');
+        if(opposite) opposite.focus();
+      }
+    }
+    return;
+  }
+
+  if(action === 'dash-width'){
+    DAL.setDashboardCardSize(el.getAttribute('data-card'), 'w', el.getAttribute('data-w'));
+    DAL.render();
+    return;
+  }
+
+  if(action === 'dash-height'){
+    var hId = el.getAttribute('data-card');
+    var cur = DAL.dashboardLayout().size[hId];
+    DAL.setDashboardCardSize(hId, 'h', (cur && cur.h === 'tall') ? 'normal' : 'tall');
+    DAL.render();
+    return;
+  }
+
+  if(action === 'dash-hide'){
+    // No toast here: the Hidden cards tray is already on screen and names the
+    // card, so a toast per hide would just stack up over the page.
+    DAL.setDashboardCardHidden(el.getAttribute('data-card'), true);
+    DAL.render();
+    return;
+  }
+
+  if(action === 'dash-show'){
+    DAL.setDashboardCardHidden(el.getAttribute('data-card'), false);
+    DAL.render();
+    return;
+  }
+
+  if(action === 'analytics-range'){
+    DAL.state.analyticsRange = el.getAttribute('data-range');
+    DAL.saveState(true);
+    DAL.render();
+    return;
+  }
+
+  if(action === 'dash-reset'){
+    DAL.resetDashboardLayout();
+    DAL.render();
+    DAL.toast('Dashboard layout reset to default.', 'info');
+    return;
+  }
 
   if(action === 'save-author-info'){
     DAL.state.authorName = document.getElementById('setAuthorName').value;
@@ -398,7 +989,7 @@ DAL.handleClick = function(action, el, e){
     return;
   }
 
-  if(action === 'backup-workspace'){ DAL.downloadJSON('draftalore-backup-'+DAL.todayKey()+'.json', DAL.state); DAL.toast('Backup downloaded','success'); return; }
+  if(action === 'backup-workspace'){ DAL.downloadJSON('draft-a-lore-workspace-backup-'+DAL.todayKey()+'.json', DAL.state); DAL.toast('Backup of all projects downloaded.','success'); return; }
 
   if(action === 'restore-workspace'){ document.getElementById('restoreInput').click(); return; }
 
@@ -434,17 +1025,44 @@ DAL.handleClick = function(action, el, e){
     return;
   }
 
+  if(action === 'save-as-confirm'){
+    var srcId = DAL.currentProjectId;
+    var src = srcId && DAL.state.projects[srcId];
+    if(!src) return;
+    var newName = document.getElementById('saNewName').value.trim() || (src.name + ' - copy-1');
+    var copy = DAL.clone(src);
+    // A Save As copy is a brand-new file: fresh id/timestamps, no shared undo
+    // history/version snapshots/folder link with the original.
+    copy.id = DAL.uid('proj');
+    copy.name = newName;
+    copy.cover = copy.cover || {};
+    copy.cover.title = newName;
+    copy.createdAt = Date.now();
+    copy.updatedAt = Date.now();
+    copy.history = []; copy.historyIndex = -1;
+    copy.versions = [];
+    copy.folderHandle = null;
+    copy.linkedFolderName = null;
+    delete DAL.folderHandles[copy.id];
+    DAL.state.projects[copy.id] = copy;
+    DAL.state.projectOrder.push(copy.id);
+    DAL.saveState(true); DAL.closeModal();
+    DAL.navigate('workspace', copy.id);
+    DAL.toast('Saved as "'+newName+'"', 'success');
+    return;
+  }
+
   if(action === 'import-project'){
     var inp = document.createElement('input');
     inp.type = 'file'; inp.accept = '.json';
     inp.onchange = function(){
       if(inp.files[0]) DAL.readJSON(inp.files[0], function(data, err){
-        if(err){ DAL.toast('Invalid JSON file','error'); return; }
-        if(!data.id || !data.name){ DAL.toast('Not a valid project file','error'); return; }
+        if(err){ DAL.toast('Choose a Draft A Lore project JSON file.','error'); return; }
+        if(!data.id || !data.name){ DAL.toast('Choose a Draft A Lore project JSON file.','error'); return; }
         data.id = DAL.uid('proj');
         DAL.state.projects[data.id] = data;
         DAL.state.projectOrder.push(data.id);
-        DAL.saveState(); DAL.render(); DAL.toast('Project imported','success');
+        DAL.saveState(); DAL.render(); DAL.toast('Project added from JSON.','success');
       });
     };
     inp.click();
@@ -530,6 +1148,8 @@ DAL.handleClick = function(action, el, e){
   }
 
   // Delegates to workspace/story-tools/adventure-tools
+  // The canvas view controls come first because both boards share them.
+  if(DAL.handleCanvasClick) DAL.handleCanvasClick(action, el, e);
   if(DAL.handleWorkspaceClick) DAL.handleWorkspaceClick(action, el, e);
   if(DAL.handleStoryClick) DAL.handleStoryClick(action, el, e);
   if(DAL.handleAdventureClick) DAL.handleAdventureClick(action, el, e);
@@ -562,6 +1182,16 @@ document.addEventListener('input', function(e){
     DAL.state[key] = parseInt(el.value) || 0;
     DAL.saveState();
   }
+  if(el.hasAttribute('data-project-goal')){
+    var gProj = DAL.state.projects[el.getAttribute('data-pid')];
+    if(gProj){
+      var gField = el.getAttribute('data-project-goal');
+      var gGoal = DAL.projectGoal(gProj);
+      if(gField === 'target') gGoal.target = Math.max(0, parseInt(el.value, 10) || 0);
+      else gGoal.deadline = el.value || '';
+      DAL.saveState();
+    }
+  }
   // Illustration name editing
   if(el.hasAttribute('data-illustration-name')){
     var projIllName = DAL.state.projects[DAL.currentProjectId];
@@ -575,6 +1205,12 @@ document.addEventListener('input', function(e){
 
 document.addEventListener('change', function(e){
   var el = e.target;
+  // Project goal fields save on every keystroke but only redraw once the value is
+  // committed; re-rendering mid-number would pull focus out of the input.
+  if(el.hasAttribute && el.hasAttribute('data-project-goal')){
+    DAL.render();
+    return;
+  }
   if(el.id === 'authorAvatarInput' && el.files[0]){
     DAL.readImageAsDataURL(el.files[0], function(dataUrl){
       DAL.state.authorAvatar = dataUrl;
