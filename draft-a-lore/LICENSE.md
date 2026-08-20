@@ -169,10 +169,15 @@ is a violation of these terms and ends your licenses under the *Violations* sect
 
 ## S4. Commercial Use
 
-Commercial use is not permitted under these terms. If you or your company want to sell the
-software, bundle it into a paid product or service, use it to generate revenue, or use it
-in the ordinary course of a for-profit business, you need a separate commercial license
-from the author. See `COMMERCIAL-LICENSE.md`.
+Commercial use **of the software itself** is not permitted under these terms. If you or your
+company want to sell the software, bundle it into a paid product or service, host it as a
+paid or ad-supported service, or use it in the ordinary course of a for-profit business, you
+need a separate commercial license from the author. See `COMMERCIAL-LICENSE.md`.
+
+**What you write with it is yours.** Novels, adventures, campaigns, artwork, and any other
+work you create using Draft A Lore are your own property, and selling that work is never a
+commercial use of the software and never requires a license, a royalty, or a credit. This
+term restricts distributing and monetising Draft A Lore, not the writing you do in it.
 
 Donations, tips, and "pay what you want" contributions received by the original author for
 the unmodified software are not a grant of commercial rights to anyone else.

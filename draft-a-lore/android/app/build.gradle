@@ -1,5 +1,19 @@
 apply plugin: 'com.android.application'
 
+def releaseKeystoreProperties = new Properties()
+def releaseKeystorePropertiesFile = rootProject.file('../keystore/keystore.properties')
+if (releaseKeystorePropertiesFile.exists()) {
+    releaseKeystorePropertiesFile.withInputStream { releaseKeystoreProperties.load(it) }
+}
+
+// The properties file's ../keystore path is relative to the android root project.
+def releaseStorePath = releaseKeystoreProperties.getProperty('storeFile')
+def releaseStoreFile = releaseStorePath ? rootProject.file(releaseStorePath) : null
+def hasReleaseSigning = releaseStoreFile != null && releaseStoreFile.exists() &&
+        ['storePassword', 'keyAlias', 'keyPassword'].every {
+            releaseKeystoreProperties.getProperty(it)
+        }
+
 android {
     namespace "com.draftalore.app"
     compileSdk rootProject.ext.compileSdkVersion
@@ -16,8 +30,22 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile releaseStoreFile
+                storePassword releaseKeystoreProperties.getProperty('storePassword')
+                keyAlias releaseKeystoreProperties.getProperty('keyAlias')
+                keyPassword releaseKeystoreProperties.getProperty('keyPassword')
+                storeType 'PKCS12'
+            }
+        }
+    }
     buildTypes {
         release {
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

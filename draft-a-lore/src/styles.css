@@ -40,6 +40,45 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
   --topbar-h:52px;
   /* Pill radius used by .chip / .tag / the mobile tab indicator. */
   --radius-full:999px;
+
+  /* Height of the workspace tool strip that sits between the topbar and a
+     tool's own body, declared once so every full-height tool body can be sized
+     from a token instead of repeating the same arithmetic in an inline style,
+     which no media query could ever override. */
+  --ws-strip-h:52px;
+  --ws-toolbar-h:40px;
+  /* Usable height for a tool that fills the workspace, and the same minus its
+     own canvas toolbar. Both recompute on a phone because --topbar-h and
+     --ws-strip-h are themselves overridden there. */
+  --ws-body-h:calc(var(--app-h,100dvh) - var(--topbar-h) - var(--ws-strip-h));
+  --ws-canvas-h:calc(var(--ws-body-h) - var(--ws-toolbar-h));
+
+  /* --- Layer scale ---------------------------------------------------------
+     Every stacking context draws from this scale. Hardcoding a z-index inside a
+     component is what let the workspace tool strip paint over the scene editor,
+     so new layers belong here rather than in the component. */
+  --z-canvas:1;
+  --z-canvas-ui:10;
+  --z-toolbar:20;
+  --z-dock:25;      /* panel docked beside content on a wide screen */
+  --z-sheet:45;     /* the same panel as a bottom sheet on a phone */
+  --z-tabbar:90;
+  --z-scrim:110;    /* nav drawer scrim, above any open sheet */
+  --z-nav:120;      /* nav drawer itself */
+  --z-modal:200;
+  --z-toast:300;
+  --z-popover:400;
+  --z-menu:5000;
+
+  /* --- Motion -------------------------------------------------------------
+     One easing curve and three durations so hovers, panels and entrances all
+     move with the same character. Everything decorative is switched off by the
+     prefers-reduced-motion rule near the top of this file. */
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --dur-fast:120ms;
+  --dur:180ms;
+  --dur-slow:300ms;
 }
 
 /* ============================================================
@@ -392,7 +431,7 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 #app{display:flex;height:100vh;height:100dvh;height:var(--app-h,100dvh);width:100%;overflow:hidden;position:relative}
 
 /* Sidebar */
-.sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--c-surface);border-right:1px solid var(--c-border);display:flex;flex-direction:column;transition:width var(--transition);z-index:10}
+.sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--c-surface);border-right:1px solid var(--c-border);display:flex;flex-direction:column;transition:width var(--transition);z-index:var(--z-canvas-ui)}
 .sidebar.collapsed{width:var(--sidebar-w-collapsed)}
 .sidebar-logo{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--c-border);height:var(--topbar-h);flex-shrink:0;overflow:hidden}
 .sidebar-logo svg{flex-shrink:0;width:24px;height:24px}
@@ -482,7 +521,7 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 .progress-fill{height:100%;background:var(--c-accent);border-radius:var(--radius-full);transition:width .4s ease}
 
 /* Modals */
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 150ms}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);z-index:var(--z-modal);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 150ms}
 .modal{background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);padding:24px;max-width:500px;width:100%;max-height:85vh;overflow-y:auto;animation:modalScale 180ms cubic-bezier(.16,1,.3,1);box-shadow:var(--shadow-lg)}
 .modal.wide{max-width:700px}
 @keyframes modalScale{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
@@ -493,7 +532,7 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 .modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
 
 /* Toasts */
-.toast-container{position:fixed;bottom:16px;right:16px;z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast-container{position:fixed;bottom:16px;right:16px;z-index:var(--z-toast);display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .toast{background:var(--c-panel);border:1px solid var(--c-border);border-left:3px solid var(--c-accent);border-radius:var(--radius);padding:10px 16px;font-size:var(--ts-sm);box-shadow:var(--shadow-md);pointer-events:auto;animation:toastIn 200ms ease;max-width:320px}
 .toast.success{border-left-color:var(--c-success)}
 .toast.error{border-left-color:var(--c-danger)}
@@ -524,7 +563,7 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 .info-icon:hover,.info-icon:focus-visible{color:var(--c-accent);border-color:var(--c-accent);background:var(--c-accent-soft,transparent)}
 .info-icon:active{transform:scale(.92)}
 .info-popover{
-  position:fixed;z-index:400;
+  position:fixed;z-index:var(--z-popover);
   background:var(--c-bg);border:1px solid var(--c-border);
   border-radius:var(--radius);padding:10px 12px;
   font-size:var(--ts-xs);line-height:1.5;color:var(--c-text);
@@ -546,7 +585,10 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 .section-title{font-family:var(--font-display);font-size:var(--ts-lg);font-weight:700}
 
 /* Project Workspace */
-.workspace{display:flex;height:100%;overflow:hidden}
+.workspace{display:flex;height:100%;width:100%;overflow:hidden}
+/* Column holding the workspace topbar and the active tool. Distinct from
+   .workspace-main, which is the padded scroll area for a tool's own content. */
+.workspace-shell{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 .workspace-sidebar{width:200px;flex-shrink:0;background:var(--c-surface);border-right:1px solid var(--c-border);display:flex;flex-direction:column;overflow-y:auto}
 .workspace-main{flex:1;overflow-y:auto;padding:16px;min-width:0}
 /* File/Edit/View menu bar lives in the project workspace header only —
@@ -557,14 +599,14 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 .menu-trigger:hover{background:var(--c-surface-2);color:var(--c-text)}
 .menu-trigger[aria-expanded="true"]{background:var(--c-surface-2);color:var(--c-text);border-color:var(--c-border)}
 .menu-caret{font-size:9px;opacity:.6}
-.menu-dropdown{position:fixed;z-index:5000;min-width:200px;background:var(--c-panel);border:1px solid var(--c-border);border-radius:10px;box-shadow:0 12px 32px -6px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.2);padding:5px}
+.menu-dropdown{position:fixed;z-index:var(--z-menu);min-width:200px;background:var(--c-panel);border:1px solid var(--c-border);border-radius:10px;box-shadow:0 12px 32px -6px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.2);padding:5px}
 .menu-item{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:7px 11px;border-radius:6px;font-size:var(--ts-sm);color:var(--c-text-muted);cursor:pointer;white-space:nowrap}
 .menu-item:hover{background:var(--c-accent-soft);color:var(--c-text)}
 .menu-item.has-sub{justify-content:space-between}
 .menu-chev{opacity:.5;font-size:13px}
 .menu-shortcut{font-size:var(--ts-xs);color:var(--c-text-faint);font-family:var(--font-mono,monospace)}
 .menu-divider{height:1px;margin:4px 6px;background:var(--c-border)}
-.menu-sub-dropdown{position:fixed;z-index:5001;min-width:180px;max-height:min(70vh,420px);overflow-y:auto;background:var(--c-panel);border:1px solid var(--c-border);border-radius:10px;box-shadow:0 12px 32px -6px rgba(0,0,0,.45);padding:5px;left:100%;top:-5px}
+.menu-sub-dropdown{position:fixed;z-index:calc(var(--z-menu) + 1);min-width:180px;max-height:min(70vh,420px);overflow-y:auto;background:var(--c-panel);border:1px solid var(--c-border);border-radius:10px;box-shadow:0 12px 32px -6px rgba(0,0,0,.45);padding:5px;left:100%;top:-5px}
 /* .save-status / .save-dot base styles already defined near line 192 —
    reused here unchanged so the menu bar's status dot matches everywhere else. */
 .ws-menubar .save-status{margin-left:4px}
@@ -620,7 +662,10 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 .rel-map-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
 .rel-node{position:absolute;background:var(--c-panel);border:2px solid var(--c-accent);border-radius:var(--radius-lg);padding:12px 16px;text-align:center;min-width:120px;cursor:pointer;transition:transform var(--transition),box-shadow var(--transition)}
 .rel-node:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
-.rel-node.center{border-color:var(--c-accent);box-shadow:0 0 0 4px var(--c-accent-soft)}
+.rel-node.center{top:50%;left:50%;transform:translate(-50%,-50%);border-color:var(--c-accent);box-shadow:0 0 0 4px var(--c-accent-soft)}
+.rel-node.center:hover{transform:translate(-50%,calc(-50% - 2px))}
+/* Sits below the centre node rather than under it. */
+.rel-map-empty{transform:translate(-50%,60px)}
 .rel-node.connected{border-color:var(--c-border)}
 .rel-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
 .rel-svg path{pointer-events:stroke;cursor:pointer}
@@ -682,19 +727,44 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 .canvas-toolbar .tb-btn:hover{background:var(--c-surface-2);color:var(--c-text)}
 .canvas-toolbar .tb-btn.active{background:var(--c-accent-soft);color:var(--c-accent)}
 .canvas-toolbar .tb-sep{width:1px;height:20px;background:var(--c-border);margin:0 4px;flex:0 0 auto}
+/* Compact dropdown for editor toolbars, where a full-width select would push
+   the remaining controls off the strip. */
+.tb-select{width:110px;flex:0 0 auto}
 .tb-zoom{flex:0 0 auto;min-width:44px;text-align:center;font-size:var(--ts-xs);color:var(--c-text-muted);font-variant-numeric:tabular-nums}
 
 /* Book Preview / Ebook Reader */
 .book-reader{display:flex;flex-direction:column;height:100%;background:var(--c-bg)}
-.book-reader-toolbar{display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--c-surface);border-bottom:1px solid var(--c-border);flex-shrink:0}
+.book-reader-toolbar{display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--c-surface);border-bottom:1px solid var(--c-border);flex-shrink:0;flex-wrap:wrap}
+.book-reader-toolbar .reader-title{font-weight:600}
+/* The reading controls sit at the right of the toolbar and wrap onto a second
+   row on a narrow phone rather than pushing the Back button off screen. */
+.reader-controls{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+.reader-select{width:auto;min-width:0;font-size:var(--ts-xs);padding:4px 6px}
+.reader-dropcap-btn{white-space:nowrap}
+.reader-controls-inline{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+/* Wide screens show the controls themselves; the "Aa" button is the phone
+   fallback and stays out of the way here. */
+.reader-settings-btn{display:none}
+.reader-sheet{display:flex;flex-direction:column;gap:14px}
+.reader-field{display:flex;flex-direction:column;gap:6px}
+.reader-field-label{font-size:var(--ts-xs);color:var(--c-text-muted);letter-spacing:.02em}
+.reader-sheet .reader-select{width:100%;font-size:var(--ts-sm);padding:8px 12px}
+.reader-sheet .reader-dropcap-btn{align-self:flex-start}
+.reader-dropcap-btn.active{background:var(--c-accent-soft);border-color:var(--c-accent);color:var(--c-accent)}
 .book-page-container{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:20px;perspective:1000px}
 .book-page{background:var(--book-bg,var(--c-surface));color:var(--book-text,var(--c-text));border-radius:4px;box-shadow:var(--shadow-lg);max-width:600px;width:100%;min-height:70%;padding:48px 40px;position:relative;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.16,1,.3,1)}
 .book-page.flipping{animation:pageFlip .5s cubic-bezier(.16,1,.3,1)}
 @keyframes pageFlip{0%{transform:rotateY(0)}50%{transform:rotateY(-90deg)}51%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
 .book-page h1{font-family:var(--font-display);font-size:var(--ts-xl);margin-bottom:16px}
 .book-page h2{font-size:var(--ts-lg);margin:24px 0 12px}
-.book-page p{font-size:var(--ts-base);line-height:1.8;margin-bottom:12px}
-.book-page p:first-of-type:first-letter{font-size:3em;float:left;line-height:.8;margin-right:6px;font-family:var(--font-display);color:var(--c-accent)}
+/* Reader typography comes from the reading preferences the reader chose. The
+   fallbacks keep the original look for any reader rendered before the
+   preferences are attached. */
+.book-page p,.book-page li,.book-page blockquote{font-family:var(--reader-font,inherit);font-size:calc(var(--ts-base) * var(--reader-scale,1));line-height:var(--reader-spacing,1.8);margin-bottom:12px}
+/* Drop capitals belong to the chapter's own opening paragraph. Scoping to
+   .chapter-prose stops the table of contents getting one, and honouring
+   data-drop-caps lets a reader switch them off. */
+.book-reader[data-drop-caps="on"] .chapter-prose > p:first-of-type::first-letter{font-size:3em;float:left;line-height:.8;margin-right:6px;font-family:var(--font-display);color:var(--c-accent)}
 .book-page-num{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:var(--ts-xs);color:var(--c-text-faint)}
 .book-reader[data-book-theme="parchment"]{--book-bg:#F5E6C8;--book-text:#3A2E1C}
 .book-reader[data-book-theme="paper"]{--book-bg:#FFFEF8;--book-text:#2A2620}
@@ -772,6 +842,10 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 .stats-table th,.stats-table td{padding:6px 12px;text-align:left;font-size:var(--ts-xs);border-bottom:1px solid var(--c-divider)}
 .stats-table th{color:var(--c-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
 .stats-table input,.stats-table select{font-size:var(--ts-xs);padding:2px 4px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-sm);width:100%}
+/* Auto table layout squeezes the narrow option columns until the longest value
+   ("number", "consumable") is clipped mid-word, so each select reserves room
+   for its own text plus the dropdown arrow. */
+.stats-table select{min-width:9ch}
 
 /* Tags */
 .tag{display:inline-flex;align-items:center;gap:4px;font-size:var(--ts-xs);padding:2px 8px;border-radius:var(--radius-full);background:var(--c-accent-soft);color:var(--c-accent);margin:2px}
@@ -783,7 +857,7 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 .chip.selected{background:var(--c-accent-soft);color:var(--c-accent);border-color:var(--c-accent)}
 
 /* Image Toolbar */
-.image-toolbar{position:absolute;background:var(--c-panel);border:1px solid var(--c-border);border-radius:var(--radius);padding:4px;display:flex;gap:4px;box-shadow:var(--shadow-md);z-index:10}
+.image-toolbar{position:absolute;background:var(--c-panel);border:1px solid var(--c-border);border-radius:var(--radius);padding:4px;display:flex;gap:4px;box-shadow:var(--shadow-md);z-index:var(--z-canvas-ui)}
 .image-toolbar button{padding:4px 8px;font-size:var(--ts-xs);border-radius:var(--radius-sm)}
 .image-toolbar button:hover{background:var(--c-surface-2)}
 
@@ -805,7 +879,7 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 
 /* Responsive */
 @media(max-width:768px){
-  .sidebar{position:absolute;height:100%;z-index:20;transition:transform var(--transition)}
+  .sidebar{position:absolute;height:100%;z-index:var(--z-toolbar);transition:transform var(--transition)}
   .sidebar.collapsed{transform:translateX(-100%);width:var(--sidebar-w)}
   .chapter-list,.lore-sidebar,.workspace-sidebar{width:160px}
   .playtest-inspector{width:200px}
@@ -1392,21 +1466,21 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 /* --- Off-canvas navigation drawer (snug + compact) --- */
 .nav-scrim{display:none}
 @media (max-width:1049px){
-  .sidebar{position:absolute;top:0;bottom:0;left:0;height:100%;z-index:40;
+  .sidebar{position:absolute;top:0;bottom:0;left:0;height:100%;z-index:var(--z-nav);
     box-shadow:var(--shadow-lg);transition:transform var(--transition),width var(--transition)}
   .sidebar:not(.collapsed){width:min(300px,82vw);transform:translateX(0)}
   .sidebar.collapsed{width:min(300px,82vw);transform:translateX(-100%);box-shadow:none}
   /* Keep labels readable while the drawer is open. */
   .sidebar.collapsed .sidebar-logo span,.sidebar.collapsed .sidebar-nav .nav-label{display:inline}
   .sidebar.collapsed .nav-item{justify-content:flex-start;padding:9px 16px}
-  .nav-scrim{display:block;position:absolute;inset:0;z-index:30;
+  .nav-scrim{display:block;position:absolute;inset:0;z-index:var(--z-scrim);
     background:rgba(0,0,0,.45);backdrop-filter:blur(1px);opacity:0;pointer-events:none;
     transition:opacity var(--transition)}
   .sidebar:not(.collapsed) ~ .nav-scrim{opacity:1;pointer-events:auto}
   .workspace-sidebar{width:clamp(150px,20vw,190px)}
   .chapter-list,.lore-sidebar{width:clamp(150px,22vw,200px)}
   /* Right-hand inspectors float over the editor rather than crushing it. */
-  .playtest-inspector{position:absolute;right:0;top:0;bottom:0;z-index:25;width:min(300px,70vw)}
+  .playtest-inspector{position:absolute;right:0;top:0;bottom:0;z-index:var(--z-dock);width:min(300px,70vw)}
   .playtest-layout,.manuscript-layout{position:relative}
 }
 
@@ -1451,7 +1525,7 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
   .dash-card-tools{width:100%;justify-content:flex-start}
   .dash-continue{gap:14px}
   .dash-continue .btn{width:100%}
-  .book-page p:first-of-type:first-letter{font-size:2.2em}
+  .book-reader[data-drop-caps="on"] .chapter-prose > p:first-of-type::first-letter{font-size:2.2em}
   .stats-table{display:block;overflow-x:auto}
 }
 
@@ -1652,7 +1726,7 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
 
   .mobile-tabbar{
     display:flex;
-    position:fixed;left:0;right:0;bottom:0;z-index:90;
+    position:fixed;left:0;right:0;bottom:0;z-index:var(--z-tabbar);
     background:var(--c-surface);
     border-top:1px solid var(--c-border);
     padding-bottom:var(--safe-b);
@@ -1745,9 +1819,6 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
   /* Short labels pair up two-across rather than eating a full row each. */
   .quick-links{grid-template-columns:repeat(2,1fr);gap:10px}
   .quick-link{min-height:var(--tap);display:flex;align-items:center;justify-content:center}
-  /* Four counters across a 390px screen wrap their labels and leave ragged
-     card heights — a 2×2 block reads cleanly and stays scannable. */
-  .ws-stat-grid{grid-template-columns:repeat(2,1fr)!important}
   .section-title,.card-title{font-size:var(--ts-lg)}
   /* Heading rows that pair a title with an action button wrap instead of
      squeezing the button into a sliver. */
@@ -1776,6 +1847,13 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
     width:100%;
   }
   input,textarea,select{font-size:16px!important}
+  /* Reading controls are the one place full-width selects are wrong: four of
+     them stacked turned the reader toolbar into a 369px wall on a 390px phone.
+     Two per row keeps the page itself the thing you see, and they still meet
+     the 44px touch target and the 16px no-zoom minimum. */
+  .reader-controls-inline{display:none}
+  .reader-settings-btn{display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap);min-width:var(--tap);font-weight:600}
+  .reader-controls{margin-left:auto;gap:8px;justify-content:flex-end}
   .form-textarea{min-height:120px}
   .form-label{font-size:var(--ts-xs)}
   .chip,.tag{padding:7px 12px;font-size:var(--ts-xs)}
@@ -1824,7 +1902,7 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
   .workspace > div:not([class]){display:contents!important}
 
   .workspace-sidebar{
-    position:sticky;top:0;z-index:20;
+    position:sticky;top:0;z-index:var(--z-toolbar);
     width:100%;max-height:none;
     flex-direction:row;flex-wrap:nowrap;align-items:stretch;
     overflow-x:auto;overflow-y:hidden;
@@ -1965,3 +2043,300 @@ a,button,[role=button],input,textarea,select{transition:color 180ms cubic-bezier
   .editor-area{min-height:0}
   .modal{max-height:96dvh}
 }
+
+/* ==========================================================================
+   TOOL PANELS  ( .tool-panel )
+   The scene editor, and any future inspector, is one component with two
+   presentations: docked beside the canvas on a wide screen, and a bottom sheet
+   on a phone. It used to be built from an inline style string with a hardcoded
+   320px width and z-index:5, which is why it covered most of a phone screen and
+   was painted over by the workspace tool strip. Layout now lives here so the
+   media queries below can actually reach it.
+   ========================================================================== */
+.tool-panel{
+  position:absolute;top:var(--ws-toolbar-h);right:0;
+  width:clamp(300px,26vw,380px);
+  height:calc(100% - var(--ws-toolbar-h));
+  display:flex;flex-direction:column;
+  background:var(--c-surface);
+  border-left:1px solid var(--c-border);
+  box-shadow:var(--shadow-lg);
+  z-index:var(--z-dock);
+  animation:panelIn var(--dur-slow) var(--ease-out);
+}
+@keyframes panelIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+
+/* Header stays put while the body scrolls, so Close is always reachable. */
+.tool-panel-header{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:12px 16px;
+  border-bottom:1px solid var(--c-border);
+  background:var(--c-surface);
+}
+.tool-panel-title{
+  font-family:var(--font-display);font-weight:700;font-size:var(--ts-sm);
+  letter-spacing:.02em;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.tool-panel-close{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:var(--radius-sm);
+  color:var(--c-text-faint);font-size:20px;line-height:1;
+  background:none;border:1px solid transparent;
+}
+.tool-panel-close:hover{background:var(--c-surface-2);color:var(--c-text);border-color:var(--c-border)}
+.tool-panel-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:16px}
+
+/* The sheet scrim only exists in the phone presentation. */
+.tool-panel-scrim{display:none}
+
+/* ==========================================================================
+   UTILITIES
+   A deliberately small set, covering the repetitive text, spacing and layout
+   declarations that were previously written inline in the tool renderers. Every
+   one resolves to a design token so themes and media queries still apply.
+   ========================================================================== */
+.u-hint{font-size:var(--ts-xs);color:var(--c-text-muted)}
+.u-hint-faint{font-size:var(--ts-xs);color:var(--c-text-faint)}
+.u-hint-note{font-size:var(--ts-xs);color:var(--c-text-faint);font-style:italic;margin-top:4px}
+.u-label-caps{font-size:var(--ts-xs);font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--c-text-muted)}
+.u-stat{font-size:var(--ts-lg);font-weight:700;color:var(--c-accent);font-variant-numeric:tabular-nums}
+.u-row{display:flex;gap:8px;align-items:center}
+.u-row-tight{display:flex;gap:4px;align-items:center}
+.u-wrap{display:flex;flex-wrap:wrap;gap:4px}
+.u-grow{flex:1;min-width:0}
+.u-push{margin-left:auto}
+.u-center{text-align:center}
+.u-auto{margin-inline:auto}
+/* Grows to share a row but keeps its label readable before wrapping. */
+.u-grow-label{flex:1;min-width:180px}
+.u-hidden{display:none}
+/* Reading measures for tool bodies, so a tool never stretches to 4K width. */
+.u-measure{max-width:700px}
+/* Workspace overview counters: four across, halved on phones below. */
+.ws-stat-grid{grid-template-columns:repeat(4,1fr);margin-bottom:16px}
+.u-measure-wide{max-width:900px}
+.u-measure-mid{max-width:800px}
+.icon-sm{width:14px;height:14px;flex:0 0 auto}
+/* Fills the workspace below the tool strip; replaces repeated inline calc(). */
+.u-fill-body{height:var(--ws-body-h)}
+.u-fill-canvas{height:var(--ws-canvas-h)}
+/* Centred placeholder for an empty canvas. */
+.canvas-empty{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:min(380px,86%);text-align:center;
+  color:var(--c-text-faint);font-size:var(--ts-sm);line-height:1.6;
+}
+.canvas-empty-title{font-size:var(--ts-lg);color:var(--c-text-muted);margin-bottom:8px;font-family:var(--font-display)}
+
+/* ==========================================================================
+   MOTION AND DEPTH
+   Restrained character: things lift slightly when pointed at, surfaces catch a
+   faint light from the theme's own brand colour, and content arrives rather
+   than appearing. No animation runs longer than 300ms, nothing loops except the
+   existing nav glow, and prefers-reduced-motion removes all of it.
+   ========================================================================== */
+
+/* Cards lift and pick up a brand-tinted edge on hover. Pointer devices only, so
+   a tap on a phone never leaves a card stuck in a hover state. */
+@media (hover:hover) and (pointer:fine){
+  /* `.card.hoverable` and `.quick-link` already lift — see their own rules
+     above. What was missing were the dashboard's own clickable surfaces, which
+     used their own class names and so answered the cursor with nothing. Only
+     cards you can actually open lift; a static readout that rises when the
+     cursor crosses it reads as a misfire rather than as polish. */
+  .dash-continue,.project-card,.library-card{
+    will-change:transform;
+    transition:transform var(--transition),box-shadow var(--transition),
+               border-color var(--transition);
+  }
+  .dash-continue:hover,.project-card:hover,.library-card:hover{
+    transform:translateY(-2px);
+    border-color:var(--c-brand-edge-strong);
+    box-shadow:var(--shadow-md),0 0 0 1px var(--c-brand-edge);
+  }
+
+  /* Panels that only display information get the brand edge and nothing more,
+     so the dashboard still answers the cursor without bouncing. */
+  .dash-cell,.dashboard-profile-card,.card:not(.hoverable){
+    transition:border-color var(--transition),box-shadow var(--transition);
+  }
+  .dash-cell:hover,.dashboard-profile-card:hover,.card:not(.hoverable):hover{
+    border-color:var(--c-brand-edge);
+  }
+  /* A slow sheen crosses a primary button on hover, tinted by the theme. */
+  .btn.primary{position:relative;overflow:hidden;isolation:isolate}
+  .btn.primary::after{
+    content:"";position:absolute;inset:0;z-index:-1;
+    background:linear-gradient(105deg,transparent 35%,var(--c-brand-glow) 50%,transparent 65%);
+    transform:translateX(-120%);
+  }
+  .btn.primary:hover::after{transform:translateX(120%);transition:transform 620ms var(--ease-out)}
+  .btn:hover{transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+  .tb-btn:hover{transform:translateY(-1px)}
+}
+
+/* Scene nodes glow with the accent when selected, and settle when placed. */
+.canvas-node{animation:nodeIn var(--dur-slow) var(--ease-spring)}
+.canvas-node.selected{box-shadow:0 0 0 3px var(--c-accent-soft),0 0 18px -2px var(--c-brand-glow)}
+@keyframes nodeIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+
+/* Tool bodies fade up as you switch tools, which makes the workspace feel like
+   it is responding rather than redrawing. */
+.content > .u-measure,.content > .u-measure-mid,.content > .u-measure-wide{animation:riseIn var(--dur-slow) var(--ease-out)}
+@keyframes riseIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* Section titles carry a short brand-gradient rule, giving every tool the same
+   quiet signature without adding chrome. */
+.section-title{position:relative}
+.section-header .section-title::after{
+  content:"";display:block;margin-top:6px;height:2px;width:36px;border-radius:2px;
+  background:linear-gradient(90deg,var(--c-brand-1),var(--c-brand-2),var(--c-brand-3));
+  opacity:.85;
+}
+
+/* ==========================================================================
+   PHONE — TOOL PANELS BECOME SHEETS
+   A 380px dock on a 390px screen is the whole screen, so below this width the
+   panel becomes a proper bottom sheet: it stops at 88% of the viewport, sits
+   above the tool strip on the layer scale, dims what is behind it, and clears
+   the home indicator and the mobile tab bar.
+   ========================================================================== */
+@media (max-width:759px){
+  :root{--ws-strip-h:100px}
+
+  .tool-panel{
+    position:fixed;inset:auto 0 0 0;top:auto;
+    /* Deliberately short of full height: the canvas stays visible above the
+       sheet, so it is obvious what is being edited and what to tap to dismiss. */
+    width:100%;height:auto;max-height:72dvh;
+    border-left:none;border-top:1px solid var(--c-border);
+    border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+    padding-bottom:var(--safe-b);
+    z-index:var(--z-sheet);
+    animation:sheetIn var(--dur-slow) var(--ease-out);
+  }
+  @keyframes sheetIn{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+  /* Grab handle, matching the modal sheet, signals it is dismissible. */
+  .tool-panel-header::before{
+    content:"";position:absolute;top:7px;left:50%;transform:translateX(-50%);
+    width:44px;height:4px;border-radius:var(--radius-full);
+    background:var(--c-text-faint);opacity:.5;
+  }
+  .tool-panel-header{position:relative;padding-top:20px}
+  .tool-panel-close{width:var(--tap);height:var(--tap)}
+  .tool-panel-body{padding:16px;padding-bottom:calc(16px + var(--safe-b))}
+
+  /* Dim the canvas behind the sheet so the two layers read as separate. */
+  .tool-panel-scrim{
+    display:block;position:fixed;inset:0;
+    z-index:calc(var(--z-sheet) - 1);
+    background:rgba(0,0,0,.45);backdrop-filter:blur(1px);
+    animation:fadeIn var(--dur) ease;
+  }
+
+  /* Touch targets and readable inputs inside the sheet. */
+  .tool-panel-body .btn{min-height:var(--tap)}
+  .tool-panel-body .form-input,
+  .tool-panel-body .form-select,
+  .tool-panel-body .form-textarea{font-size:16px;min-height:var(--tap)}
+
+  /* Tool strip.
+     Tabs were fixed-width, so a five-tool project overflowed 390px and clipped
+     its last two tools off the edge with nothing to say they were there. Each
+     tab may now shrink to a 68px floor and grow to share the width, so a short
+     tool list fits exactly and a long one still scrolls — with a fade on the
+     trailing edge to show that it does. */
+  .workspace-sidebar{position:relative}
+  .ws-nav-item{
+    flex:1 0 auto;min-width:68px;max-width:none;
+    padding-left:4px;padding-right:4px;
+    text-align:center;
+  }
+  /* Two short lines beat one truncated one at this width. */
+  .ws-nav-item span{
+    display:block;font-size:10px;line-height:1.2;
+    white-space:normal;overflow-wrap:break-word;
+  }
+  .workspace-sidebar::after{
+    content:"";position:sticky;right:0;flex:0 0 20px;align-self:stretch;
+    margin-left:-20px;pointer-events:none;
+    background:linear-gradient(90deg,transparent,var(--c-surface));
+  }
+
+  /* Four counters across a 390px screen wrap their labels and leave ragged
+     card heights — a 2×2 block reads cleanly and stays scannable. */
+  .ws-stat-grid{grid-template-columns:repeat(2,1fr)}
+
+  /* Utility measures must not force horizontal overflow on a narrow screen. */
+  .u-measure,.u-measure-mid,.u-measure-wide{max-width:100%}
+}
+
+/* Explanatory copy inside the folder-sync modal. */
+.folder-sync-note{font-size:var(--ts-sm);color:var(--c-text-muted);line-height:1.65}
+.folder-sync-note + .folder-sync-note{margin-top:10px}
+.folder-sync-note strong{color:var(--c-text)}
+
+/* ============================================================
+   Interaction layer: menus, selection, clipboard, drag, panels
+   ============================================================ */
+
+/* Menu additions on top of the base .menu-dropdown rules. Headings and check
+   marks let one renderer serve the menu bar and right-click menus alike. */
+.menu-heading{padding:7px 11px 4px;font-size:var(--ts-xs);letter-spacing:.08em;text-transform:uppercase;color:var(--c-text-faint);font-weight:700}
+.menu-item.danger{color:var(--c-danger)}
+.menu-item.danger:hover{background:color-mix(in srgb, var(--c-danger) 14%, transparent);color:var(--c-danger)}
+.menu-item.disabled{opacity:.4;cursor:default}
+.menu-item.disabled:hover{background:none;color:var(--c-text-muted)}
+.menu-check{width:14px;flex:0 0 auto;font-size:11px;color:var(--c-accent);margin-right:-6px}
+.menu-divider{height:1px;background:var(--c-border);margin:5px 7px}
+
+/* A right-click menu is the same object as a menu-bar dropdown, only summoned
+   at the pointer, so it inherits everything and adds an entrance. */
+.ctx-menu{animation:menuIn var(--dur-fast) var(--ease-out)}
+@keyframes menuIn{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}
+
+/* Selection reads as a lit edge rather than a fill, so a selected card still
+   shows its own colours. */
+.is-selected{outline:2px solid var(--c-accent);outline-offset:1px}
+.canvas-node.is-selected{box-shadow:0 0 0 2px var(--c-accent),0 0 22px -4px var(--c-brand-glow)}
+
+/* --- Clipboard board --- */
+.clip-board{display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto}
+.clip-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--c-border);border-radius:var(--radius-sm);background:var(--c-surface);transition:border-color var(--dur) var(--ease-out)}
+.clip-entry:hover{border-color:var(--c-brand-edge-strong)}
+.clip-entry-main{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
+.clip-kind{flex:0 0 auto;font-size:var(--ts-xs);font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--c-accent);background:var(--c-accent-soft);padding:2px 7px;border-radius:var(--radius-full)}
+.clip-label{font-weight:600;color:var(--c-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.clip-entry-actions{display:flex;gap:6px;flex:0 0 auto}
+
+/* --- Drag and drop ---
+   The ghost follows the pointer and is never a hit-test target itself. */
+.drag-ghost{position:fixed;z-index:var(--z-toast);pointer-events:none;padding:6px 12px;border-radius:var(--radius-sm);background:var(--c-panel);border:1px solid var(--c-brand-edge-strong);color:var(--c-text);font-size:var(--ts-sm);font-weight:600;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:0 10px 28px -8px rgba(0,0,0,.5);opacity:.94;transform:rotate(-1.5deg)}
+.drag-ghost.over-target{border-color:var(--c-accent);box-shadow:0 0 0 1px var(--c-accent),0 10px 28px -8px var(--c-brand-glow)}
+body.dragging{cursor:grabbing}
+body.dragging *{cursor:grabbing !important}
+/* Text selection during a drag turns the page blue and looks broken. */
+body.dragging{user-select:none;-webkit-user-select:none}
+.drag-source{opacity:.4}
+.drop-line{position:fixed;z-index:var(--z-toast);height:2px;background:var(--c-accent);border-radius:2px;pointer-events:none;box-shadow:0 0 8px var(--c-brand-glow)}
+.drop-line.vertical{width:2px;height:auto}
+.drop-active{outline:2px dashed var(--c-brand-edge-strong);outline-offset:2px;border-radius:var(--radius-sm)}
+.drag-handle{cursor:grab;touch-action:none;color:var(--c-text-faint);letter-spacing:-1px;user-select:none}
+.drag-handle:hover{color:var(--c-accent)}
+
+/* --- Collapsible panels ---
+   Height is animated from a measured pixel value in JS, so the transition here
+   only has to describe the curve. */
+.panel{border:1px solid var(--c-border);border-radius:var(--radius-sm);background:var(--c-surface);overflow:hidden}
+.panel + .panel{margin-top:8px}
+.panel-head{display:flex;align-items:center;gap:8px;width:100%;min-height:var(--tap);padding:10px 12px;background:none;border:0;cursor:pointer;text-align:left;color:var(--c-text);font-family:inherit;font-size:var(--ts-sm);font-weight:600}
+.panel-head:hover{background:var(--c-accent-soft)}
+.panel-chev{flex:0 0 auto;font-size:15px;color:var(--c-text-faint);transition:transform var(--dur) var(--ease-out),color var(--dur) var(--ease-out)}
+.panel.open .panel-chev{transform:rotate(90deg);color:var(--c-accent)}
+.panel-title{flex:1;min-width:0}
+.panel-badge{flex:0 0 auto;font-size:var(--ts-xs);font-weight:700;color:var(--c-accent);background:var(--c-accent-soft);padding:2px 8px;border-radius:var(--radius-full)}
+.panel-body{overflow:hidden;transition:height var(--dur) var(--ease-out)}
+.panel-body > *{padding:0 12px 12px}

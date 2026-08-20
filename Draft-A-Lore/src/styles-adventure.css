@@ -1,0 +1,22 @@
+/* Adventure-specific layer. Loaded by adventure-tools.js so the generated
+   single-file build remains self-contained without changing the build script. */
+.rpg-tools{padding-bottom:var(--space-5,20px)}
+.rpg-tools .panel{margin:0 0 var(--space-4,16px);border:1px solid var(--c-border);background:var(--c-surface)}
+.rpg-intro{color:var(--c-text-muted);font-size:var(--ts-sm);line-height:1.6;margin:0 0 12px}
+.rpg-table-wrap{overflow:auto}.rpg-table-wrap table{min-width:720px}.rpg-empty{padding:18px;text-align:center;color:var(--c-text-faint)}
+.rpg-slot-list{display:grid;gap:8px;margin:10px 0}.rpg-slot-card{display:grid;grid-template-columns:minmax(120px,.6fr) minmax(180px,1fr) auto;gap:8px;align-items:center;padding:9px;border:1px solid var(--c-border);border-radius:var(--radius)}
+.rpg-slot-actions{display:flex;gap:4px}.rpg-capacity{max-width:180px;margin:4px 0 14px}.rpg-use-effects{background:var(--c-surface-2)}.rpg-use-effect{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:4px 0}.rpg-use-effect .form-select,.rpg-use-effect .form-input{flex:1 1 130px;min-width:0}
+.canvas-node[data-drop]{transition:transform var(--dur-fast) var(--ease-out),box-shadow var(--dur-fast) var(--ease-out)}.canvas-node[data-drop].drop-active{transform:translateY(-2px);box-shadow:0 0 0 2px var(--c-accent)}
+.rpg-gate{display:grid;gap:2px;padding:8px 0;border-bottom:1px solid var(--c-divider);font-size:var(--ts-xs)}.rpg-gate strong{font-size:var(--ts-sm)}.rpg-gate.open strong{color:var(--c-success)}.rpg-gate.locked strong{color:var(--c-warning)}.rpg-gate.hidden strong{color:var(--c-text-faint)}
+.rpg-integrity-row{width:100%;display:grid;grid-template-columns:130px 1fr;gap:10px;text-align:left;padding:10px;margin:4px 0;border:1px solid var(--c-border);border-radius:var(--radius);background:var(--c-surface);color:var(--c-text);font:inherit;cursor:pointer}.rpg-integrity-row:disabled{cursor:default;opacity:.78}.rpg-integrity-row span{color:var(--c-text-muted);font-size:var(--ts-xs)}.rpg-integrity-row.problem{border-left:3px solid var(--c-danger)}.rpg-integrity-row.warning{border-left:3px solid var(--c-warning)}.rpg-integrity-row.info{border-left:3px solid var(--c-accent)}.rpg-integrity-ok{color:var(--c-success);line-height:1.6}
+.playtest-inspector>.panel{margin-bottom:8px}.rpg-node-panel{margin:0}.rpg-node-panel .panel-body{overflow:visible}
+@media (max-width:640px){.rpg-slot-card{grid-template-columns:1fr}.rpg-slot-actions{justify-content:flex-end}.rpg-integrity-row{grid-template-columns:1fr}.rpg-tools .form-input,.rpg-tools .form-select{font-size:16px}.rpg-use-effect{padding:6px 0}.rpg-table-wrap{margin-inline:-4px}}
+
+.rpg-loose-flags { display: flex; flex-wrap: wrap; gap: 8px; }
+.rpg-loose-flag {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 6px 4px 10px; border-radius: var(--r-pill, 999px);
+  background: var(--c-surface-2); border: 1px solid var(--c-border);
+  font-size: var(--ts-xs); font-family: var(--f-mono, monospace);
+  color: var(--c-text-muted);
+}

@@ -1,0 +1,473 @@
+/* Asset manager, audio controls, adventure player. */
+
+.asset-intro{
+  color: var(--c-text-faint);
+  font-size: var(--ts-sm);
+  max-width: 62ch;
+  margin: 0 0 16px;
+  line-height: 1.6;
+}
+.asset-intro code{
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.92em;
+}
+
+.asset-note{
+  display: block;
+  color: var(--c-text-faint);
+  font-size: var(--ts-xs);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+/* --- Folder tabs --- */
+
+.asset-tabs{
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--c-border);
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+.asset-tab{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 0 16px;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--c-text-faint);
+  font: inherit;
+  font-size: var(--ts-sm);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .18s ease, border-color .18s ease;
+}
+.asset-tab:hover{ color: var(--c-text); }
+.asset-tab.active{
+  color: var(--c-accent);
+  border-bottom-color: var(--c-accent);
+}
+.asset-tab-count{
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--c-surface-2);
+  color: var(--c-text-faint);
+  font-size: var(--ts-xs);
+  text-align: center;
+}
+.asset-tab.active .asset-tab-count{
+  background: color-mix(in srgb, var(--c-accent) 20%, transparent);
+  color: var(--c-accent);
+}
+
+/* --- Drop zone --- */
+
+.asset-dropzone{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 20px;
+  margin-bottom: 12px;
+  border: 1.5px dashed var(--c-border);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--c-surface-2);
+  color: var(--c-text-faint);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+.asset-dropzone:hover{
+  border-color: var(--c-accent);
+  background: color-mix(in srgb, var(--c-accent) 6%, var(--c-surface-2));
+}
+.asset-dropzone.file-drag-over{
+  border-color: var(--c-accent);
+  border-style: solid;
+  background: color-mix(in srgb, var(--c-accent) 12%, var(--c-surface-2));
+  transform: scale(1.005);
+}
+.asset-dropzone svg{ width: 28px; height: 28px; opacity: .7; }
+.asset-dropzone-title{ color: var(--c-text); font-weight: 600; font-size: var(--ts-sm); }
+.asset-dropzone-hint{ font-size: var(--ts-xs); max-width: 46ch; }
+
+.asset-usage{
+  color: var(--c-text-faint);
+  font-size: var(--ts-xs);
+  margin-bottom: 20px;
+}
+
+/* --- Image and vector grid --- */
+
+.asset-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+}
+.asset-card{
+  position: relative;
+  margin: 0;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md, 10px);
+  background: var(--c-surface);
+  overflow: hidden;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.asset-card:hover{
+  border-color: var(--c-accent);
+  box-shadow: 0 4px 18px -6px color-mix(in srgb, var(--c-accent) 45%, transparent);
+  transform: translateY(-2px);
+}
+.asset-thumb{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  background: var(--c-surface-2);
+  overflow: hidden;
+}
+.asset-thumb img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* Vectors are usually transparent, so they get a checker field and room to
+   breathe rather than being cropped like a photograph. */
+.asset-card.svg .asset-thumb{
+  background-image:
+    linear-gradient(45deg, var(--c-border) 25%, transparent 25%, transparent 75%, var(--c-border) 75%),
+    linear-gradient(45deg, var(--c-border) 25%, transparent 25%, transparent 75%, var(--c-border) 75%);
+  background-size: 14px 14px;
+  background-position: 0 0, 7px 7px;
+}
+.asset-card.svg .asset-thumb img{
+  object-fit: contain;
+  padding: 14px;
+}
+.asset-card figcaption{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+}
+.asset-name{
+  font-size: var(--ts-xs);
+  font-weight: 600;
+  color: var(--c-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.asset-meta{ font-size: var(--ts-xs); color: var(--c-text-faint); }
+.asset-card-del{
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0;
+  line-height: 1;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity .18s ease;
+}
+.asset-card:hover .asset-card-del,
+.asset-card:focus-within .asset-card-del{ opacity: 1; }
+.asset-missing{
+  padding: 10px;
+  color: var(--c-danger);
+  font-size: var(--ts-xs);
+  text-align: center;
+}
+
+/* --- Sound list --- */
+
+.asset-sound-list{ display: flex; flex-direction: column; gap: 10px; }
+.asset-sound{
+  padding: 12px 14px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md, 10px);
+  background: var(--c-surface);
+  transition: border-color .18s ease;
+}
+.asset-sound:hover{ border-color: var(--c-accent); }
+.asset-sound-head{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.asset-sound-name{
+  font-weight: 600;
+  font-size: var(--ts-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 160px;
+  min-width: 0;
+}
+.asset-sound-head .btn{ margin-left: auto; }
+.asset-audio{ width: 100%; height: 34px; display: block; }
+
+/* --- Audio binding + settings --- */
+
+.audio-bind{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: var(--radius-md, 10px);
+  transition: background .18s ease, outline-color .18s ease;
+  outline: 2px solid transparent;
+  outline-offset: 4px;
+}
+.audio-bind.file-drag-over{
+  background: color-mix(in srgb, var(--c-accent) 10%, transparent);
+  outline-color: var(--c-accent);
+}
+.asset-preview-row{ display: flex; gap: 8px; flex-wrap: wrap; }
+
+.form-range{
+  width: 100%;
+  min-height: var(--tap);
+  accent-color: var(--c-accent);
+}
+.form-range.slim{ width: 84px; min-height: 28px; }
+
+/* --- Shared audio transport --- */
+
+.audio-bar{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.playtest-audio-bar{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md, 10px);
+  background: var(--c-surface-2);
+}
+.playtest-audio-bar .asset-note{ margin: 0; }
+
+/* --- Library shelf --- */
+
+.book-spine-kind{
+  font-size: var(--ts-xs);
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .8;
+  margin-bottom: 6px;
+}
+.book-spine-meta{
+  font-size: var(--ts-xs);
+  opacity: .85;
+  margin-top: 6px;
+}
+.book-spine-actions{
+  display: flex;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 12px;
+}
+.book-spine-actions .btn{
+  background: rgba(255,255,255,.18);
+  border-color: rgba(255,255,255,.35);
+  color: #fff;
+}
+.book-spine-actions .btn:hover{ background: rgba(255,255,255,.3); }
+
+.import-choice{
+  padding: 12px 0;
+  border-top: 1px solid var(--c-border);
+}
+.import-choice:first-of-type{ border-top: 0; }
+
+/* --- Adventure player --- */
+
+.player-shell{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  grid-template-areas: 'bar bar' 'scene status';
+  gap: 20px;
+  align-items: start;
+  min-height: 100%;
+}
+.player-bar{
+  grid-area: bar;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--c-border);
+}
+.player-title{
+  font-family: var(--font-display);
+  font-size: var(--ts-lg);
+  font-weight: 700;
+}
+.player-bar-right{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.player-scene{
+  grid-area: scene;
+  max-width: 68ch;
+}
+.player-scene-title{
+  font-family: var(--font-display);
+  font-size: var(--ts-xl);
+  font-weight: 700;
+  margin: 0 0 16px;
+  line-height: 1.2;
+}
+.player-art{
+  margin: 0 0 20px;
+  border-radius: var(--radius-md, 10px);
+  overflow: hidden;
+  border: 1px solid var(--c-border);
+}
+.player-art img{ width: 100%; display: block; }
+.player-art figcaption{
+  padding: 8px 12px;
+  background: var(--c-surface-2);
+  color: var(--c-text-faint);
+  font-size: var(--ts-xs);
+  font-style: italic;
+}
+/* The player obeys the same reading preferences as the two book readers, so a
+   reader picks a typeface, size and spacing once and every kind of story in the
+   library respects it. Fallbacks keep the original look if the preferences are
+   not attached. */
+.player-text{
+  font-family: var(--reader-font, inherit);
+  /* --ts-base, not the --ts-md this rule used to name: that token was never
+     defined, so the declaration was invalid and the size came from elsewhere. */
+  font-size: calc(var(--ts-base) * var(--reader-scale, 1));
+  line-height: var(--reader-spacing, 1.75);
+}
+.player-text p{ margin: 0 0 1em; }
+
+.player-choices{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 28px;
+}
+.player-choice{
+  display: block;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 14px 18px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md, 10px);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--ts-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.player-choice:hover{
+  border-color: var(--c-accent);
+  transform: translateX(3px);
+  box-shadow: -3px 0 0 0 var(--c-accent);
+}
+.player-choice.locked{
+  cursor: not-allowed;
+  opacity: .6;
+  border-style: dashed;
+}
+.player-choice.locked:hover{ transform: none; box-shadow: none; border-color: var(--c-border); }
+.player-choice-req{
+  display: block;
+  margin-top: 4px;
+  font-size: var(--ts-xs);
+  color: var(--c-text-faint);
+  font-style: italic;
+}
+
+.player-ending{
+  margin-top: 28px;
+  padding: 24px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--c-surface-2);
+  text-align: center;
+}
+.player-ending-label{
+  font-family: var(--font-display);
+  font-size: var(--ts-lg);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.player-status{
+  grid-area: status;
+  position: sticky;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md, 10px);
+  background: var(--c-surface-2);
+  font-size: var(--ts-xs);
+}
+.player-status-title{
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+  margin-bottom: 8px;
+}
+.player-status dl{ margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.player-status dl > div{ display: flex; justify-content: space-between; gap: 8px; }
+.player-status dt{ color: var(--c-text-faint); }
+.player-status dd{ margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.player-status ul{ margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 3px; }
+
+@media (max-width: 900px){
+  .player-shell{
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'bar' 'scene' 'status';
+  }
+  .player-status{ position: static; }
+  .player-scene{ max-width: none; }
+}
+
+/* While a drag is in flight, every place an asset can land shows a faint outline,
+   so the author can see where artwork and sound are allowed to go. */
+body.dragging .asset-dropzone,
+body.dragging .audio-slot{
+  outline: 1px dashed var(--c-border);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+body.dragging .asset-dropzone.drop-active,
+body.dragging .audio-slot.drop-active{ outline-style: solid; }
+
+/* The bundle control sits beside folder sync without forcing the compact
+   workspace toolbar to wrap differently from its existing button pattern. */
+.bundle-save-button{ white-space:nowrap; }

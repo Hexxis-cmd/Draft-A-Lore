@@ -97,7 +97,9 @@ DAL.defaultState = function(){
     dashboardLayout: { order: [], hidden: [], size: {} },
     analyticsRange: '30d',
     sidebarCollapsed: false,
-    autosave: true
+    autosave: true,
+    clipboard: [],
+    panels: {}
   };
 };
 
@@ -121,7 +123,7 @@ DAL.defaultProject = function(name, type){
     canvasView: {},
     adventure: null,
     versions: [],
-    history: [], historyIndex: -1
+    history: [], redoStack: [], historyIndex: -1
   };
   if(type === 'rpg' || type === 'dual'){
     proj.adventure = DAL.defaultAdventure(proj.name);
@@ -171,6 +173,171 @@ DAL.grabMode = false;
 DAL.distractionFree = false;
 DAL.readerPage = 0;
 DAL.readerTheme = 'parchment';
+
+/* --- Reading preferences -------------------------------------------------
+   Typeface, text size, line spacing, page tint and drop caps belong to the
+   person reading rather than to the project, so they live once in state and
+   apply to the Book Preview, the library reader and the adventure player
+   alike. Every stack below is made of fonts the operating system already has:
+   the app must look identical with the network unplugged.
+
+   The dyslexia-friendly entry is a real accessibility option, not decoration.
+   Comic Sans and Trebuchet have the irregular letter shapes that make glyphs
+   harder to transpose, and both ship with Windows, macOS and Android.
+
+   Family names are quoted with apostrophes, never double quotes: these stacks
+   are written into an inline style attribute, and a double quote would end the
+   attribute early and break the page. */
+DAL.READER_FONTS = [
+  { id:'serif',     label:'Serif',              stack:"Georgia, 'Iowan Old Style', 'Times New Roman', serif" },
+  { id:'oldstyle',  label:'Old style',          stack:"'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif" },
+  { id:'sans',      label:'Sans',               stack:"-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" },
+  { id:'humanist',  label:'Humanist',           stack:"Optima, Candara, 'Gill Sans', 'Trebuchet MS', sans-serif" },
+  { id:'mono',      label:'Monospace',          stack:"ui-monospace, SFMono-Regular, Menlo, Consolas, 'Courier New', monospace" },
+  { id:'dyslexic',  label:'Dyslexia friendly',  stack:"'Comic Sans MS', 'Trebuchet MS', Verdana, sans-serif" }
+];
+DAL.READER_SIZES = [
+  { id:'s',  label:'Small',       scale:0.9 },
+  { id:'m',  label:'Medium',      scale:1 },
+  { id:'l',  label:'Large',       scale:1.15 },
+  { id:'xl', label:'Larger',      scale:1.32 },
+  { id:'xxl',label:'Largest',     scale:1.5 }
+];
+DAL.READER_SPACING = [
+  { id:'tight',   label:'Tight',   value:1.5 },
+  { id:'normal',  label:'Normal',  value:1.8 },
+  { id:'relaxed', label:'Relaxed', value:2.1 }
+];
+
+/* Reading preferences are read on every reader render, which makes this the
+   right place to migrate an older save additively and to keep the legacy
+   DAL.readerTheme global — still read in several views — pointing at the
+   stored value. Defaults match how the app has always looked. */
+DAL.readerPrefs = function(){
+  if(!DAL.state) return { theme:'parchment', font:'serif', size:'m', spacing:'normal', dropCaps:true };
+  var prefs = DAL.state.readerPrefs;
+  if(!prefs || typeof prefs !== 'object'){ prefs = {}; DAL.state.readerPrefs = prefs; }
+  if(!prefs.theme) prefs.theme = DAL.readerTheme || 'parchment';
+  if(!prefs.font) prefs.font = 'serif';
+  if(!prefs.size) prefs.size = 'm';
+  if(!prefs.spacing) prefs.spacing = 'normal';
+  if(prefs.dropCaps === undefined) prefs.dropCaps = true;
+  DAL.readerTheme = prefs.theme;
+  return prefs;
+};
+
+DAL.readerFontStack = function(id){
+  var found = DAL.READER_FONTS.filter(function(f){ return f.id === id; })[0] || DAL.READER_FONTS[0];
+  return found.stack;
+};
+
+/* The reader containers carry their typography as custom properties so one
+   stylesheet rule serves all three readers and nothing needs hardcoding. */
+DAL.readerStyleAttr = function(){
+  var p = DAL.readerPrefs();
+  var size = DAL.READER_SIZES.filter(function(s){ return s.id === p.size; })[0] || DAL.READER_SIZES[1];
+  var spacing = DAL.READER_SPACING.filter(function(s){ return s.id === p.spacing; })[0] || DAL.READER_SPACING[1];
+  return ' data-book-theme="'+DAL.escapeHtml(p.theme)+'"'+
+    ' data-drop-caps="'+(p.dropCaps ? 'on' : 'off')+'"'+
+    ' style="--reader-font:'+DAL.readerFontStack(p.font)+';--reader-scale:'+size.scale+';--reader-spacing:'+spacing.value+'"';
+};
+
+/* The reading controls are built once and reused by both book readers, so the
+   Book Preview an author checks their work in and the reader their audience
+   opens can never offer different settings. */
+DAL.readerControlsBody = function(labelled){
+  var p = DAL.readerPrefs();
+  function options(list, current, idKey, labelKey){
+    return list.map(function(o){
+      return '<option value="'+o[idKey]+'"'+(current === o[idKey] ? ' selected' : '')+'>'+DAL.escapeHtml(o[labelKey])+'</option>';
+    }).join('');
+  }
+  /* The sheet has room for real labels; the toolbar strip does not, so there the
+     same controls rely on their title and aria-label. */
+  function field(label, inner){
+    return labelled
+      ? '<label class="reader-field"><span class="reader-field-label">'+label+'</span>'+inner+'</label>'
+      : inner;
+  }
+  return field('Typeface',
+      '<select class="form-select reader-select" data-action="reader-font" title="Typeface" aria-label="Typeface">'+
+        options(DAL.READER_FONTS, p.font, 'id', 'label')+'</select>')+
+    field('Text size',
+      '<select class="form-select reader-select" data-action="reader-text-size" title="Text size" aria-label="Text size">'+
+        options(DAL.READER_SIZES, p.size, 'id', 'label')+'</select>')+
+    field('Line spacing',
+      '<select class="form-select reader-select" data-action="reader-spacing" title="Line spacing" aria-label="Line spacing">'+
+        options(DAL.READER_SPACING, p.spacing, 'id', 'label')+'</select>')+
+    field('Page tint',
+      '<select class="form-select reader-select" data-action="reader-theme" title="Page tint" aria-label="Page tint">'+
+        '<option value="parchment"'+(p.theme==='parchment'?' selected':'')+'>Parchment</option>'+
+        '<option value="paper"'+(p.theme==='paper'?' selected':'')+'>Paper</option>'+
+        '<option value="night"'+(p.theme==='night'?' selected':'')+'>Night</option>'+
+        '<option value="sepia"'+(p.theme==='sepia'?' selected':'')+'>Sepia</option>'+
+      '</select>')+
+    '<button class="btn sm reader-dropcap-btn'+(p.dropCaps ? ' active' : '')+'" data-action="reader-drop-caps" '+
+      'aria-pressed="'+(p.dropCaps ? 'true' : 'false')+'" title="Drop capitals at the start of each chapter">Drop caps</button>';
+};
+
+DAL.readerControls = function(opts){
+  opts = opts || {};
+  var withReadAloud = opts.readAloud !== false;
+  return '<div class="reader-controls">'+
+    ((withReadAloud && DAL.readAloudButton) ? DAL.readAloudButton() : '')+
+    /* On a phone four stacked selects filled a quarter of the screen, so there
+       the strip collapses to this one button and the controls open in a sheet.
+       Both are always in the markup; the stylesheet decides which is shown. */
+    '<button class="btn sm reader-settings-btn" data-action="reader-settings" '+
+      'aria-label="Reading settings" title="Reading settings">Aa</button>'+
+    '<span class="reader-controls-inline">'+DAL.readerControlsBody(false)+'</span>'+
+  '</div>';
+};
+
+/* The phone sheet: the same controls, with labels, in a dialog. */
+DAL.openReaderSettings = function(){
+  DAL.modal('Reading settings',
+    '<div class="reader-sheet">'+DAL.readerControlsBody(true)+'</div>',
+    { footer: '<button class="btn primary" data-action="close-modal">Done</button>' });
+};
+
+/* One handler for every reading control, called from the click dispatcher and
+   from the select-change dispatcher, so a preference cannot behave differently
+   depending on which reader is open. Returns true when it took the action. */
+DAL.applyReaderPref = function(action, el){
+  if(action === 'reader-settings'){ DAL.openReaderSettings(); return true; }
+  var prefs = DAL.readerPrefs(), touched = true;
+  if(action === 'reader-theme'){ prefs.theme = el.value; DAL.readerTheme = el.value; }
+  else if(action === 'reader-font'){ prefs.font = el.value; }
+  else if(action === 'reader-text-size'){ prefs.size = el.value; }
+  else if(action === 'reader-spacing'){ prefs.spacing = el.value; }
+  else if(action === 'reader-drop-caps'){ prefs.dropCaps = !prefs.dropCaps; }
+  else touched = false;
+  if(!touched) return false;
+  DAL.saveState(true);
+  /* Repainting the open reader in place keeps the reader's page, scroll position
+     and any narration running, which a full re-render would throw away. */
+  var size = DAL.READER_SIZES.filter(function(s){ return s.id === prefs.size; })[0] || DAL.READER_SIZES[1];
+  var spacing = DAL.READER_SPACING.filter(function(s){ return s.id === prefs.spacing; })[0] || DAL.READER_SPACING[1];
+  var shells = document.querySelectorAll('.book-reader, .player-shell');
+  for(var i = 0; i < shells.length; i++){
+    var shell = shells[i];
+    shell.setAttribute('data-book-theme', prefs.theme);
+    shell.setAttribute('data-drop-caps', prefs.dropCaps ? 'on' : 'off');
+    shell.style.setProperty('--reader-font', DAL.readerFontStack(prefs.font));
+    shell.style.setProperty('--reader-scale', size.scale);
+    shell.style.setProperty('--reader-spacing', spacing.value);
+  }
+  if(action === 'reader-drop-caps'){
+    /* Both the toolbar strip and the phone sheet can be in the document, so
+       every copy of the button is updated rather than only the first. */
+    var btns = document.querySelectorAll('.reader-dropcap-btn');
+    for(var b = 0; b < btns.length; b++){
+      btns[b].classList.toggle('active', !!prefs.dropCaps);
+      btns[b].setAttribute('aria-pressed', prefs.dropCaps ? 'true' : 'false');
+    }
+  }
+  return true;
+};
 DAL.playtestState = null;
 DAL.playtestHistory = [];
 DAL.playtestStyle = 'book';
@@ -228,6 +395,14 @@ DAL.loadState = function(){
   if(!DAL.state.projectOrder) DAL.state.projectOrder = [];
   if(!DAL.state.customFonts) DAL.state.customFonts = [];
   if(!DAL.state.wordHistory) DAL.state.wordHistory = {};
+  if(!DAL.state.clipboard) DAL.state.clipboard = [];
+  if(!DAL.state.panels) DAL.state.panels = {};
+  // Undo/redo stacks are per project; older saves predate redoStack entirely.
+  Object.keys(DAL.state.projects).forEach(function(id){
+    var proj = DAL.state.projects[id];
+    if(!Array.isArray(proj.history)) proj.history = [];
+    if(!Array.isArray(proj.redoStack)) proj.redoStack = [];
+  });
   DAL.migrateWordHistory();
   DAL.normalizeDashboardLayout();
   if(!DAL.analyticsRange(DAL.state.analyticsRange)) DAL.state.analyticsRange = '30d';
@@ -304,18 +479,53 @@ DAL.checkVersionSnapshot = function(){
   }
 };
 
-/* --- Undo/Redo --- */
-DAL.pushHistory = function(){
-  if(!DAL.currentProjectId) return;
-  var proj = DAL.state.projects[DAL.currentProjectId];
-  if(!proj) return;
-  // truncate forward history
-  proj.history = proj.history.slice(0, proj.historyIndex + 1);
+/* --- Undo/Redo ---
+   Every caller takes its snapshot immediately BEFORE mutating, so `history` is a
+   stack of pre-change states: undo pops one and restores it, after banking the
+   current state on `redoStack` so the move can be replayed. Any fresh edit
+   invalidates the redo stack, which is what makes the two directions consistent. */
+DAL.HISTORY_MAX = 40;
+
+// Fields that describe history or live handles, never the content being edited.
+DAL.HISTORY_EXCLUDE = ['history', 'redoStack', 'historyIndex', 'versions', 'folderHandle'];
+
+DAL.snapshotProject = function(proj){
   var snap = DAL.clone(proj);
-  delete snap.history; delete snap.versions; delete snap.folderHandle;
-  proj.history.push(snap);
-  if(proj.history.length > 40) proj.history.shift();
+  DAL.HISTORY_EXCLUDE.forEach(function(k){ delete snap[k]; });
+  return snap;
+};
+
+/* Restore in place so every existing reference to the project object stays
+   valid. Keys the snapshot lacks are dropped, otherwise undoing an addition
+   would leave the added field behind. */
+DAL.applySnapshot = function(proj, snap){
+  Object.keys(proj).forEach(function(k){
+    if(DAL.HISTORY_EXCLUDE.indexOf(k) < 0 && !(k in snap)) delete proj[k];
+  });
+  Object.assign(proj, snap);
+};
+
+DAL.pushHistory = function(){
+  var proj = DAL.currentProjectId && DAL.state.projects[DAL.currentProjectId];
+  if(!proj) return;
+  if(!proj.history) proj.history = [];
+  proj.history.push(DAL.snapshotProject(proj));
+  if(proj.history.length > DAL.HISTORY_MAX) proj.history.shift();
+  proj.redoStack = [];
   proj.historyIndex = proj.history.length - 1;
+};
+
+// Move one step between the two stacks; shared by undo and redo.
+DAL.stepHistory = function(fromKey, toKey, message, emptyMessage){
+  var proj = DAL.currentProjectId && DAL.state.projects[DAL.currentProjectId];
+  if(!proj) return;
+  if(!proj[fromKey] || !proj[fromKey].length){ DAL.toast(emptyMessage, 'warning'); return; }
+  if(!proj[toKey]) proj[toKey] = [];
+  proj[toKey].push(DAL.snapshotProject(proj));
+  DAL.applySnapshot(proj, proj[fromKey].pop());
+  proj.historyIndex = (proj.history || []).length - 1;
+  DAL.saveState(); DAL.render();
+  DAL.toast(message, 'info');
 };
 
 /* The manuscript editor is a contenteditable, so the browser already keeps an
@@ -368,28 +578,12 @@ DAL._syncEditor = function(ed){
 
 DAL.undo = function(){
   if(DAL._driveEditorCommand('undo', 'Text change undone')) return;
-  if(!DAL.currentProjectId) return;
-  var proj = DAL.state.projects[DAL.currentProjectId];
-  if(!proj || proj.historyIndex <= 0){ DAL.toast('No project change to undo','warning'); return; }
-  proj.historyIndex--;
-  var snap = DAL.clone(proj.history[proj.historyIndex]);
-  delete snap.history; delete snap.versions;
-  Object.assign(proj, snap);
-  DAL.saveState(); DAL.render();
-  DAL.toast('Project change undone','info');
+  DAL.stepHistory('history', 'redoStack', 'Project change undone', 'No project change to undo');
 };
 
 DAL.redo = function(){
   if(DAL._driveEditorCommand('redo', 'Text change redone')) return;
-  if(!DAL.currentProjectId) return;
-  var proj = DAL.state.projects[DAL.currentProjectId];
-  if(!proj || proj.historyIndex >= proj.history.length-1){ DAL.toast('No project change to redo','warning'); return; }
-  proj.historyIndex++;
-  var snap = DAL.clone(proj.history[proj.historyIndex]);
-  delete snap.history; delete snap.versions;
-  Object.assign(proj, snap);
-  DAL.saveState(); DAL.render();
-  DAL.toast('Project change redone','info');
+  DAL.stepHistory('redoStack', 'history', 'Project change redone', 'No project change to redo');
 };
 
 /* --- Word Count Helpers --- */
@@ -1019,9 +1213,26 @@ DAL.initInfoTips = function(){
 /* --- Folder Sync (File System Access API) --- */
 DAL.folderHandles = {};
 
+/* True when the browser can hand us a real directory handle.
+
+   The File System Access API is desktop-Chromium only. It is absent in the
+   Android WebView the packaged app runs in, in Firefox, and in Safari, so the
+   Link Folder button has to say so rather than appearing to do nothing. */
+DAL.canLinkFolder = function(){
+  return typeof window.showDirectoryPicker === 'function';
+};
+
 DAL.linkFolder = async function(projectId){
-  if(!window.showDirectoryPicker){
-    DAL.toast('Folder sync requires Chrome or Edge. Use Export instead.','warning');
+  if(!DAL.canLinkFolder()){
+    // A modal rather than a toast: the old warning toast was easy to miss, which
+    // made the button look like it did nothing at all. This says what the feature
+    // needs and points at the export path that does work here.
+    DAL.modal('Folder Sync Unavailable',
+      '<p class="folder-sync-note">Linking a folder lets Draft A Lore write your project straight into a folder on your device as plain files, and keep it up to date as you write.</p>'+
+      '<p class="folder-sync-note">It relies on the browser\u2019s File System Access API, which today only desktop Chrome, Edge, Brave and Opera provide. This build is running somewhere that does not offer it, so there is no folder picker to open.</p>'+
+      '<p class="folder-sync-note"><strong>Use Export Project instead.</strong> It writes the same content to a file you can save anywhere \u2014 including a folder your cloud drive syncs \u2014 and Import Project reads it straight back.</p>',
+      { footer: '<button class="btn" data-action="close-modal">Close</button>'+
+                '<button class="btn primary" data-action="export-project">Open Export</button>' });
     return;
   }
   try{
@@ -1267,6 +1478,9 @@ DAL.render = function(){
   } else if(DAL.currentView === 'library'){
     if(topTitle) topTitle.textContent = 'Library';
     content.innerHTML = DAL.renderLibrary();
+  } else if(DAL.currentView === 'player'){
+    if(topTitle) topTitle.textContent = 'Adventure';
+    content.innerHTML = DAL.renderPlayer();
   } else if(DAL.currentView === 'settings'){
     if(topTitle) topTitle.textContent = 'Settings';
     content.innerHTML = DAL.renderSettings();
@@ -1316,6 +1530,16 @@ DAL.initChartReadouts = function(){
   });
 };
 
+/* Source for a bundled image asset.
+
+   The web build embeds assets as data URIs on window.DAL_ASSETS so the built
+   HTML is a single self-contained file. When src/ is served directly, or the
+   asset was not embedded, this falls back to the plain filename beside the page. */
+DAL.assetUrl = function(name, fallback){
+  var assets = window.DAL_ASSETS;
+  return (assets && assets[name]) || fallback;
+};
+
 /* --- App Shell --- */
 DAL.buildShell = function(){
   var app = document.createElement('div');
@@ -1323,7 +1547,7 @@ DAL.buildShell = function(){
   app.innerHTML =
     '<aside class="sidebar" id="sidebar">'+
       '<div class="sidebar-logo">'+
-        '<img src="logo.png" alt="Draft A Lore">'+
+        '<img src="'+DAL.assetUrl('logo', 'logo.png')+'" alt="Draft A Lore">'+
         '<span class="brand-text">Draft A Lore</span>'+
       '</div>'+
       '<nav class="sidebar-nav">'+
@@ -1505,78 +1729,118 @@ DAL.MENUS = {
   ],
   edit: [
     { label: 'Undo', action: 'undo', shortcut: 'Ctrl+Z' },
-    { label: 'Redo', action: 'redo', shortcut: 'Ctrl+Y' }
+    { label: 'Redo', action: 'redo', shortcut: 'Ctrl+Y' },
+    { divider: true },
+    { label: 'Copy',  action: 'edit-copy',  shortcut: 'Ctrl+C', when: 'selection' },
+    { label: 'Cut',   action: 'edit-cut',   shortcut: 'Ctrl+X', when: 'selection' },
+    { label: 'Paste', action: 'edit-paste', shortcut: 'Ctrl+V', when: 'clipboard' },
+    { label: 'Duplicate', action: 'edit-duplicate', shortcut: 'Ctrl+D', when: 'selection' },
+    { label: 'Delete',    action: 'edit-delete', shortcut: 'Del', danger: true, when: 'selection' },
+    { divider: true },
+    { label: 'Select All', action: 'edit-select-all', shortcut: 'Ctrl+A' },
+    { label: 'Clipboard Board…', action: 'show-clipboard', shortcut: 'Ctrl+Shift+V' },
+    { divider: true },
+    { label: 'Find & Replace…', action: 'show-find', shortcut: 'Ctrl+F', when: 'writing' },
+    { label: 'Find Next',       action: 'find-next', shortcut: 'F3', when: 'writing' }
   ],
   view: [
     { label: 'Theme', submenu: DAL.THEMES.map(function(t){
       return { label: t.name, action: 'set-theme', attr: t.id };
     }) },
     { divider: true },
-    { label: 'Toggle Sidebar', action: 'toggle-sidebar' },
-    { label: 'Fullscreen',     action: 'fullscreen' }
+    { label: 'Toggle Sidebar', action: 'toggle-sidebar', shortcut: 'Ctrl+\\' },
+    { label: 'Focus Mode',     action: 'fullscreen',     shortcut: 'F11' },
+    { label: 'Typewriter Scrolling', action: 'toggle-typewriter', when: 'writing' },
+    { divider: true },
+    { label: 'Zoom In',        action: 'sg-zoom-in',  shortcut: 'Ctrl+=', when: 'canvas' },
+    { label: 'Zoom Out',       action: 'sg-zoom-out', shortcut: 'Ctrl+-', when: 'canvas' },
+    { label: 'Reset Zoom',     action: 'sg-reset',    shortcut: 'Ctrl+0', when: 'canvas' },
+    { divider: true },
+    { label: 'Expand All Panels',   action: 'panels-expand' },
+    { label: 'Collapse All Panels', action: 'panels-collapse' }
+  ],
+  tools: [
+    { label: 'Version History…',   action: 'show-versions' },
+    { label: 'Take Snapshot',      action: 'take-snapshot' },
+    { divider: true },
+    { label: 'Writing Sprint…',    action: 'show-sprint' },
+    { label: 'Sprint Timer',       action: 'toggle-sprint-widget' },
+    { label: 'Manuscript Report…', action: 'show-readability' },
+    { label: 'Comments…',          action: 'show-comments' },
+    { divider: true },
+    { label: 'Story Structure Templates…', action: 'show-beats', when: 'writing' },
+    { label: 'Corkboard',          action: 'show-corkboard', when: 'writing' },
+    { divider: true },
+    { label: 'Check Adventure Integrity…', action: 'show-integrity', when: 'adventure' }
   ]
+};
+
+DAL.activeProject = function(){
+  return DAL.currentProjectId ? DAL.state.projects[DAL.currentProjectId] : null;
+};
+
+/* Whether a menu item applies right now. Items keyed to the other kind of
+   project are dropped from the menu entirely, because a novelist never wants an
+   adventure command; items that are merely unavailable at this moment stay
+   visible but greyed, which is how a desktop menu teaches its own shortcuts. */
+DAL.MENU_WHEN = {
+  writing: function(p){ return !!p && p.type !== 'rpg'; },
+  adventure: function(p){ return !!p && p.type !== 'novel'; },
+  canvas: function(){ return DAL.currentTool === 'storygraph' || DAL.currentTool === 'mindmap'; },
+  selection: function(){ return !!DAL.selection; },
+  clipboard: function(){ return DAL.clipboard().length > 0; }
+};
+
+// Items whose condition describes the project, not the moment: hide, don't grey.
+DAL.MENU_HIDE_WHEN = { writing: true, adventure: true };
+
+DAL.menuItems = function(key){
+  var defs = DAL.MENUS[key];
+  if(!defs) return null;
+  var proj = DAL.activeProject();
+  var out = [];
+  defs.forEach(function(item){
+    if(item.when){
+      var test = DAL.MENU_WHEN[item.when];
+      if(test && !test(proj)){
+        if(DAL.MENU_HIDE_WHEN[item.when]) return;
+        item = Object.assign({}, item, { disabled: true });
+      }
+    }
+    out.push(item);
+  });
+  // Hiding items can strip a group bare and leave stacked or trailing dividers.
+  return out.filter(function(item, i){
+    if(!item.divider) return true;
+    if(!out.slice(0, i).some(function(p){ return !p.divider; })) return false;
+    if(!out.slice(i + 1).some(function(n){ return !n.divider; })) return false;
+    return !out[i - 1] || !out[i - 1].divider;
+  });
 };
 
 DAL.closeMenu = function(){
   var m = document.getElementById('dalMenuDropdown');
   if(m) m.remove();
+  DAL._openMenuKey = null;
   document.removeEventListener('click', DAL._menuOutsideHandler, true);
 };
 
 DAL.toggleMenu = function(trigger, key){
+  var wasOpen = DAL._openMenuKey === key;
   DAL.closeMenu();
-  var items = DAL.MENUS[key];
-  if(!items) return;
+  // Clicking the open menu's own button closes it rather than reopening.
+  if(wasOpen) return;
+  var items = DAL.menuItems(key);
+  if(!items || !items.length) return;
   var dd = document.createElement('div');
   dd.id = 'dalMenuDropdown';
   dd.className = 'menu-dropdown';
-  var html = '';
-  items.forEach(function(it){
-    if(it.divider){ html += '<div class="menu-divider"></div>'; return; }
-    if(it.submenu){
-      html += '<div class="menu-item has-sub" data-menu-sub="'+items.indexOf(it)+'">'+DAL.escapeHtml(it.label)+'<span class="menu-chev">›</span></div>';
-      return;
-    }
-    var extra = it.attr !== undefined ? ' data-theme="'+DAL.escapeHtml(it.attr)+'"' : '';
-    html += '<div class="menu-item" data-action="menu" data-do="'+it.action+'"'+extra+'>'+DAL.escapeHtml(it.label)+(it.shortcut?'<span class="menu-shortcut">'+DAL.escapeHtml(it.shortcut)+'</span>':'')+'</div>';
-  });
-  dd.innerHTML = html;
+  dd.innerHTML = DAL.menuHtml(items);
   document.body.appendChild(dd);
-  // Position under the trigger button.
+  DAL.bindSubmenus(dd, items);
   var r = trigger.getBoundingClientRect();
-  dd.style.left = r.left + 'px';
-  dd.style.top = (r.bottom + 4) + 'px';
-  // Submenu hover (desktop) / tap (mobile) handling.
-  dd.querySelectorAll('.menu-item.has-sub').forEach(function(sub){
-    var openSub = function(){
-      dd.querySelectorAll('.menu-sub-dropdown').forEach(function(s){ s.remove(); });
-      var parent = items[parseInt(sub.getAttribute('data-menu-sub'), 10)];
-      var subItems = (parent && parent.submenu) || [];
-      var sd = document.createElement('div');
-      sd.className = 'menu-sub-dropdown';
-      var sh = '';
-      subItems.forEach(function(si){
-        var se = si.attr !== undefined ? ' data-theme="'+DAL.escapeHtml(si.attr)+'"' : '';
-        sh += '<div class="menu-item" data-action="menu" data-do="'+si.action+'"'+se+'>'+DAL.escapeHtml(si.label)+'</div>';
-      });
-      sd.innerHTML = sh;
-      dd.appendChild(sd);
-      var sr = sub.getBoundingClientRect();
-      sd.style.left = (sr.right - 4) + 'px';
-      sd.style.top = sr.top + 'px';
-      // A long submenu (the theme list) can reach past the bottom of a short
-      // window, so pull it back up until it fits.
-      var sdr = sd.getBoundingClientRect();
-      if(sdr.right > window.innerWidth) sd.style.left = Math.max(8, sr.left - sdr.width + 4) + 'px';
-      if(sdr.bottom > window.innerHeight - 8) sd.style.top = Math.max(8, window.innerHeight - sdr.height - 8) + 'px';
-    };
-    sub.addEventListener('mouseenter', openSub);
-    sub.addEventListener('click', openSub);
-  });
-  // Keep within viewport.
-  var dr = dd.getBoundingClientRect();
-  if(dr.right > window.innerWidth) dd.style.left = Math.max(8, window.innerWidth - dr.width - 8) + 'px';
-  // Dismiss on outside click / escape / scroll.
+  DAL.clampToViewport(dd, r.left, r.bottom + 4);
+  DAL._openMenuKey = key;
   DAL._menuOutsideHandler = function(e){
     if(!dd.contains(e.target) && e.target !== trigger) DAL.closeMenu();
   };
@@ -1603,6 +1867,31 @@ DAL.runAction = function(action, el, e){
   else if(action === 'undo') DAL.undo();
   else if(action === 'redo') DAL.redo();
   else if(action === 'close-modal') DAL.closeModal();
+  // Universal editing commands, resolved against whatever is selected.
+  else if(action.indexOf('edit-') === 0){ DAL.handleEditAction(action); return; }
+  // Collapsible panels
+  else if(action === 'toggle-panel'){ DAL.togglePanel(el.getAttribute('data-panel'), el); return; }
+  else if(action === 'panels-expand' || action === 'panels-collapse'){ DAL.setAllPanels(action === 'panels-expand'); return; }
+  // Clipboard board
+  else if(action === 'show-clipboard'){ DAL.showClipboardBoard(); return; }
+  else if(action === 'clip-paste'){
+    var pasteEntry = DAL.clipboard().find(function(c){ return c.id === el.getAttribute('data-clip'); });
+    DAL.closeModal();
+    if(!DAL.clipPasteEntry(pasteEntry)) DAL.toast('That cannot be pasted here', 'info');
+    return;
+  }
+  else if(action === 'clip-remove'){
+    DAL.state.clipboard = DAL.clipboard().filter(function(c){ return c.id !== el.getAttribute('data-clip'); });
+    DAL.saveState(true);
+    DAL.showClipboardBoard();
+    return;
+  }
+  else if(action === 'clip-clear'){
+    DAL.state.clipboard = [];
+    DAL.saveState(true);
+    DAL.showClipboardBoard();
+    return;
+  }
   // Delegates to view-specific handlers
   if(DAL.handleClick) DAL.handleClick(action, el, e);
 };
@@ -1617,15 +1906,63 @@ document.addEventListener('click', function(e){
   DAL.runAction(action, el, e);
 });
 
-// Keyboard shortcuts
+/* --- Keyboard shortcuts ---
+   Anything typed into a field belongs to the field: the browser's own editing
+   shortcuts must keep working there, so app-level bindings that would collide
+   with text editing are skipped while a field has focus. Save, find and the
+   clipboard board are deliberate exceptions, since those read as app commands
+   wherever the cursor happens to be. */
+
+DAL.inTextField = function(target){
+  if(!target) return false;
+  return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+};
+
+/* Actions routed by shortcut go through runAction so a key press and a menu
+   click can never drift apart. */
+DAL.fireAction = function(action){
+  DAL.runAction(action, document.body, {});
+};
+
 document.addEventListener('keydown', function(e){
-  if(e.ctrlKey || e.metaKey){
-    if(e.key === 'z' && !e.shiftKey){ if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && !e.target.isContentEditable){ e.preventDefault(); DAL.undo(); } }
-    else if(e.key === 'y' || (e.key === 'z' && e.shiftKey)){ if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && !e.target.isContentEditable){ e.preventDefault(); DAL.redo(); } }
-    else if(e.key === 's'){ e.preventDefault(); DAL.saveState(true); DAL.toast('Saved','success'); }
+  var typing = DAL.inTextField(e.target);
+  var mod = e.ctrlKey || e.metaKey;
+
+  if(mod && e.shiftKey && (e.key === 'V' || e.key === 'v')){ e.preventDefault(); DAL.showClipboardBoard(); return; }
+
+  if(mod && !e.shiftKey){
+    switch(e.key){
+      case 's': e.preventDefault(); DAL.saveState(true); DAL.toast('Saved','success'); return;
+      case 'f': e.preventDefault(); DAL.fireAction('show-find'); return;
+      case '\\': e.preventDefault(); DAL.fireAction('toggle-sidebar'); return;
+      case '=': case '+': if(!typing){ e.preventDefault(); DAL.fireAction('sg-zoom-in'); return; } break;
+      case '-': if(!typing){ e.preventDefault(); DAL.fireAction('sg-zoom-out'); return; } break;
+      case '0': if(!typing){ e.preventDefault(); DAL.fireAction('sg-reset'); return; } break;
+    }
   }
+
+  // Editing keys only apply outside fields, where the app owns the selection.
+  if(mod && !typing){
+    switch(e.key){
+      case 'z': if(!e.shiftKey){ e.preventDefault(); DAL.undo(); return; } break;
+      case 'y': e.preventDefault(); DAL.redo(); return;
+      case 'c': e.preventDefault(); DAL.fireAction('edit-copy'); return;
+      case 'x': e.preventDefault(); DAL.fireAction('edit-cut'); return;
+      case 'v': e.preventDefault(); DAL.fireAction('edit-paste'); return;
+      case 'd': e.preventDefault(); DAL.fireAction('edit-duplicate'); return;
+      case 'a': e.preventDefault(); DAL.fireAction('edit-select-all'); return;
+    }
+    if(e.key === 'Z' && e.shiftKey){ e.preventDefault(); DAL.redo(); return; }
+  }
+
+  if(e.key === 'F3'){ e.preventDefault(); DAL.fireAction('find-next'); return; }
+  if(e.key === 'F11'){ e.preventDefault(); DAL.fireAction('fullscreen'); return; }
+  if((e.key === 'Delete' || e.key === 'Backspace') && !typing && DAL.selection){ e.preventDefault(); DAL.fireAction('edit-delete'); return; }
+
   if(e.key === 'Escape'){
-    if(DAL.distractionFree){ DAL.distractionFree = false; document.body.classList.remove('distraction-free'); DAL.render(); }
+    if(document.getElementById('dalCtxMenu')) DAL.closeContextMenu();
+    else if(document.getElementById('dalMenuDropdown')) DAL.closeMenu();
+    else if(DAL.distractionFree){ DAL.distractionFree = false; document.body.classList.remove('distraction-free'); DAL.render(); }
     else if(DAL.grabMode && !document.querySelector('.modal-backdrop')){ DAL.setGrabMode(false); }
     else if(DAL.organizeDashboard && !document.querySelector('.modal-backdrop')){ DAL.organizeDashboard = false; DAL.render(); }
     else { DAL.closeModal(); }

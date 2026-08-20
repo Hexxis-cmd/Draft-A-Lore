@@ -16,6 +16,7 @@ from build import render_html
 ROOT = Path(__file__).resolve().parent
 ASSETS = ROOT / "assets"
 WWW = ROOT / "www"
+ANDROID_ASSETS = ROOT / "android" / "app" / "src" / "main" / "assets" / "public"
 
 ASSET_FILES = ("favicon.ico", "manifest.webmanifest", "logo.png")
 
@@ -39,6 +40,17 @@ def main() -> None:
 
     staged = sorted(path.relative_to(WWW).as_posix() for path in WWW.rglob("*") if path.is_file())
     print(f"Staged {len(staged)} offline web assets in {WWW}")
+
+    # Gradle packages android/app/src/main/assets/, not www/, so the web app has
+    # to be mirrored there or the release APK installs with an empty WebView.
+    # `npx cap copy android` does the same thing, but it needs Node >= 22 and a
+    # network install, and this build has no other Node dependency — so the copy
+    # is done here and `python3 build-mobile.py` alone is enough before Gradle.
+    if ANDROID_ASSETS.parent.is_dir():
+        if ANDROID_ASSETS.exists():
+            shutil.rmtree(ANDROID_ASSETS)
+        shutil.copytree(WWW, ANDROID_ASSETS)
+        print(f"Mirrored them into {ANDROID_ASSETS} for the Android build")
 
 
 if __name__ == "__main__":

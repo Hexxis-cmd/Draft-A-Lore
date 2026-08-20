@@ -69,7 +69,7 @@ DAL.renderDashboardBar = function(layout, organizing){
     html += '<div class="dash-bar-text"><strong>Dashboard</strong></div>' +
       '<div class="dash-bar-actions">' +
         '<button class="btn sm" data-action="dash-organize-on">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>' +
           'Organize Dashboard</button>' +
       '</div>';
   }
@@ -637,7 +637,7 @@ DAL.renderProjects = function(){
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'+
         '<div style="font-weight:700;font-size:var(--ts-base)">'+DAL.escapeHtml(p.name)+'</div>'+
         '<div style="display:flex;gap:4px">'+
-          '<button class="btn icon sm" data-action="project-settings" data-pid="'+p.id+'" style="width:24px;height:24px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>'+
+          '<button class="btn icon sm" data-action="project-settings" data-pid="'+p.id+'" style="width:24px;height:24px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>'+
         '</div>'+
       '</div>'+
       '<div style="display:flex;gap:4px;margin-bottom:8px">'+
@@ -719,7 +719,7 @@ DAL.showDeleteConfirm = function(pid, step){
 
 /* --- Settings --- */
 DAL.renderSettings = function(){
-  var html = '<div style="max-width:700px;margin:0 auto">';
+  var html = '<div class="u-measure u-auto">';
 
   // Theme
   html += '<div class="section-header"><div class="section-title">Theme</div></div>';
@@ -794,7 +794,7 @@ DAL.renderSettings = function(){
   html += '<div class="section-header"><div class="section-title">Saving</div></div>';
   html += '<div class="card" style="margin-bottom:20px">'+
     '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">'+
-      '<div style="min-width:180px;flex:1">'+
+      '<div class="u-grow-label">'+
         '<div style="font-weight:600;margin-bottom:2px">Automatic saving</div>'+
         '<div style="font-size:var(--ts-xs);color:var(--c-text-faint);line-height:1.5">Automatic saving covers manuscript typing. Project actions save immediately. Pending work saves when the app closes.</div>'+
       '</div>'+
@@ -824,7 +824,8 @@ DAL.renderSettings = function(){
     'Draft A Lore v1.0.0<br>'+
     'Created by Daymien Vanhorn<br>'+
     '<a href="https://github.com/Hexxis-cmd/Draft-A-Lore" target="_blank" rel="noopener" style="color:var(--c-text-faint)">Draft A Lore on GitHub</a><br>'+
-    'Free for noncommercial use<br>Commercial use requires a license'+
+    'Free for noncommercial use \u2014 commercial use of the app itself requires a license<br>'+
+    'Whatever you write here is yours: selling your own work needs no permission'+
   '</div>';
   html += '</div>';
   return html;
@@ -871,22 +872,24 @@ DAL.renderBookReader = function(pid){
   // Chapter pages
   if(p.chapters){
     p.chapters.forEach(function(ch){
-      pages.push({ type:'chapter', html: '<h2>'+DAL.escapeHtml(ch.title)+'</h2>'+ch.contentHTML });
+      /* Chapter prose is wrapped so a drop capital can be attached to the first
+         paragraph of the chapter itself and nowhere else. Without the wrapper the
+         rule also hit the first line of the table of contents. */
+      pages.push({ type:'chapter', html: '<h2>'+DAL.escapeHtml(ch.title)+'</h2><div class="chapter-prose">'+ch.contentHTML+'</div>' });
     });
   }
   if(DAL.readerPage >= pages.length) DAL.readerPage = 0;
 
-  var html = '<div class="book-reader" data-book-theme="'+DAL.readerTheme+'">';
+  /* Chapters follow the cover and the table of contents, so the narrator can work
+     out which chapter is showing and use its bound voiceover if it has one. */
+  var readCh = (p.chapters || [])[DAL.readerPage - 2] || null;
+  DAL._readAloudCid = readCh ? readCh.id : '';
+
+  var html = '<div class="book-reader"'+DAL.readerStyleAttr()+'>';
   html += '<div class="book-reader-toolbar">'+
     '<button class="btn sm" data-action="close-reader">← Back to Library</button>'+
-    '<div style="margin-left:auto;display:flex;gap:4px;align-items:center">'+
-      '<select class="form-select" style="width:auto;font-size:var(--ts-xs)" id="readerThemeSelect" data-action="reader-theme">'+
-        '<option value="parchment"'+(DAL.readerTheme==='parchment'?' selected':'')+'>Parchment</option>'+
-        '<option value="paper"'+(DAL.readerTheme==='paper'?' selected':'')+'>Paper</option>'+
-        '<option value="night"'+(DAL.readerTheme==='night'?' selected':'')+'>Night</option>'+
-        '<option value="sepia"'+(DAL.readerTheme==='sepia'?' selected':'')+'>Sepia</option>'+
-      '</select>'+
-    '</div></div>';
+    DAL.readerControls()+
+    '</div>';
   html += '<div class="book-page-container"><div class="book-page" id="bookPage">'+pages[DAL.readerPage].html+'<div class="book-page-num">'+(DAL.readerPage+1)+' / '+pages.length+'</div></div></div>';
   html += '<div class="book-nav">'+
     '<button class="btn sm" data-action="reader-prev" '+(DAL.readerPage<=0?'disabled':'')+'>← Previous</button>'+
@@ -1141,11 +1144,10 @@ DAL.handleClick = function(action, el, e){
     DAL.flipPage();
     return;
   }
-  if(action === 'reader-theme'){
-    DAL.readerTheme = el.value;
-    document.querySelector('.book-reader').setAttribute('data-book-theme', DAL.readerTheme);
-    return;
-  }
+  /* Typeface, size, spacing, tint and drop caps all land here. The shared
+     handler repaints whichever reader is open in place, so the page being read
+     and any narration under way both survive the change. */
+  if(DAL.applyReaderPref(action, el)) return;
 
   // Delegates to workspace/story-tools/adventure-tools
   // The canvas view controls come first because both boards share them.

@@ -18,7 +18,7 @@ DAL.renderWorkspace = function(proj){
   var wc = DAL.getProjectWordCount(proj);
   var daily = DAL.getDailyWordCount(proj.id);
 
-  var html = '<div class="workspace" style="width:100%;height:100%">';
+  var html = '<div class="workspace">';
   // Workspace sidebar
   html += '<aside class="workspace-sidebar" id="wsSidebar">';
 
@@ -62,10 +62,18 @@ DAL.renderWorkspace = function(proj){
     });
   }
 
+  /* Assets belong to the project rather than to one discipline, so the folder
+     lives in its own section for every project type. */
+  html += '<div class="ws-nav-group-label">Project</div>';
+  [['assets','Assets','M3 7l9-4 9 4-9 4-9-4z M3 7v10l9 4 9-4V7 M12 11v10']].forEach(function(t){
+    var active = DAL.currentTool === t[0] ? ' active' : '';
+    html += '<div class="ws-nav-item'+active+'" data-action="ws-tool" data-tool="'+t[0]+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="'+t[2]+'"/></svg><span>'+t[1]+'</span></div>';
+  });
+
   html += '</aside>'; // end sidebar
 
   // Workspace topbar + main
-  html += '<div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0">';
+  html += '<div class="workspace-shell">';
   html += '<div class="workspace-topbar">'+
     '<button class="btn sm" data-action="nav-projects">← Back</button>'+
     /* File/Edit/View menu bar — workspace only. It carries Save, Save As,
@@ -76,6 +84,7 @@ DAL.renderWorkspace = function(proj){
       '<button class="menu-trigger" data-action="open-menu" data-menu="file">File<span class="menu-caret">▾</span></button>'+
       '<button class="menu-trigger" data-action="open-menu" data-menu="edit">Edit<span class="menu-caret">▾</span></button>'+
       '<button class="menu-trigger" data-action="open-menu" data-menu="view">View<span class="menu-caret">▾</span></button>'+
+      '<button class="menu-trigger" data-action="open-menu" data-menu="tools">Tools<span class="menu-caret">▾</span></button>'+
       '<div class="save-status" title="Saved on this device"><div class="save-dot"></div><span>Saved</span></div>'+
     '</div>'+
     '<input class="form-input" style="width:auto;font-weight:600" id="projNameInput" value="'+DAL.escapeHtml(proj.name)+'">'+
@@ -136,6 +145,7 @@ DAL.renderStoryTool = function(proj, tool){
     case 'storygraph': return DAL.renderStoryGraph(proj);
     case 'stats': return DAL.renderStatsTraits(proj);
     case 'items': return DAL.renderItems(proj);
+    case 'assets': return DAL.renderAssets(proj);
     case 'playtest': return DAL.renderPlaytest(proj);
     case 'export-rpg': return DAL.renderRPGExport(proj);
     default: return DAL.renderOverview(proj);
@@ -154,11 +164,11 @@ DAL.renderOverview = function(proj){
   recent.sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
   recent = recent.slice(0,5);
 
-  var html = '<div style="max-width:800px">';
+  var html = '<div class="u-measure-mid">';
   html += '<div class="section-header"><div class="section-title">'+DAL.escapeHtml(proj.name)+'</div><span class="badge accent">'+proj.type+'</span></div>';
 
   // Stats grid
-  html += '<div class="card-grid ws-stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">'+
+  html += '<div class="card-grid ws-stat-grid">'+
     '<div class="card" style="text-align:center"><div style="font-size:var(--ts-lg);font-weight:700;color:var(--c-accent)">'+(proj.chapters||[]).length+'</div><div style="font-size:var(--ts-xs);color:var(--c-text-muted)">Chapters</div></div>'+
     '<div class="card" style="text-align:center"><div style="font-size:var(--ts-lg);font-weight:700;color:var(--c-accent)">'+(proj.characters||[]).length+'</div><div style="font-size:var(--ts-xs);color:var(--c-text-muted)">Characters</div></div>'+
     '<div class="card" style="text-align:center"><div style="font-size:var(--ts-lg);font-weight:700;color:var(--c-accent)">'+(proj.plots||[]).length+'</div><div style="font-size:var(--ts-xs);color:var(--c-text-muted)">Plot Threads</div></div>'+
@@ -186,10 +196,10 @@ DAL.renderOverview = function(proj){
 
   // Quick links
   html += '<div class="card" style="margin-bottom:16px"><div style="font-weight:600;margin-bottom:8px">Quick Links</div><div class="quick-links">';
-  var tools = proj.type === 'rpg' ? ['storygraph','stats','items','playtest','illustrations'] : ['manuscript','characters','illustrations','bookpreview','export'];
-  if(proj.type === 'dual') tools = ['manuscript','characters','illustrations','storygraph','stats','items','playtest'];
+  var tools = proj.type === 'rpg' ? ['storygraph','stats','items','playtest','assets'] : ['manuscript','characters','illustrations','bookpreview','assets'];
+  if(proj.type === 'dual') tools = ['manuscript','characters','storygraph','items','playtest','assets'];
   tools.forEach(function(t){
-    var labels = {manuscript:'Manuscript',characters:'Characters',relationships:'Relationships',plots:'Plot Threads',lore:'Lore',illustrations:'Illustrations',mindmap:'Mind Map',bookpreview:'Book Preview',export:'Export',storygraph:'Story Graph',stats:'Stats & Traits',items:'Items',playtest:'Playthrough'};
+    var labels = {manuscript:'Manuscript',characters:'Characters',relationships:'Relationships',plots:'Plot Threads',lore:'Lore',illustrations:'Illustrations',mindmap:'Mind Map',bookpreview:'Book Preview',export:'Export',storygraph:'Story Graph',stats:'Stats & Traits',items:'Items',playtest:'Playthrough',assets:'Assets'};
     html += '<div class="quick-link" data-action="ws-tool" data-tool="'+t+'">'+labels[t]+'</div>';
   });
   html += '</div></div>';
@@ -215,23 +225,23 @@ DAL.renderManuscript = function(proj){
   }
   var currentCh = proj.chapters.find(function(c){ return c.id === DAL.selectedChapterId; });
 
-  var html = '<div class="manuscript-layout" style="height:calc(var(--app-h,100dvh) - var(--topbar-h) - 52px)">';
+  var html = '<div class="manuscript-layout u-fill-body">';
   // Chapter list
-  html += '<div class="chapter-list">'+
-    '<div class="chapter-list-header"><span style="font-size:var(--ts-xs);font-weight:600;text-transform:uppercase;color:var(--c-text-muted)">Chapters</span><button class="btn sm primary" data-action="add-chapter">+</button></div>'+
-    '<div class="chapter-list-items" id="chapterList">';
+  var chapterPanelBody = '<div class="chapter-list-header"><span style="font-size:var(--ts-xs);font-weight:600;text-transform:uppercase;color:var(--c-text-muted)">Chapters</span><button class="btn sm primary" data-action="add-chapter">+</button></div>'+
+    '<div class="chapter-list-items" id="chapterList" data-drop="chapter" data-sort-item="[data-drag=\"chapter\"]">';
   proj.chapters.forEach(function(ch, i){
     var active = ch.id === DAL.selectedChapterId ? ' active' : '';
     var wc = DAL.countWords(ch.contentHTML);
-    html += '<div class="chapter-item'+active+'" data-action="select-chapter" data-cid="'+ch.id+'">'+
-      '<span class="drag-handle" data-action="reorder-chapter" data-cid="'+ch.id+'">⋮⋮</span>'+
+    chapterPanelBody += '<div class="chapter-item'+active+'" data-action="select-chapter" data-cid="'+ch.id+'" data-sel="chapter:'+ch.id+'" data-ctx="chapter" data-ctx-id="'+ch.id+'" data-drag="chapter:'+ch.id+'" data-drag-label="'+DAL.escapeHtml(ch.title)+'" data-drag-handle=".drag-handle">'+
+      '<span class="drag-handle" data-cid="'+ch.id+'" title="Drag to reorder">⋮⋮</span>'+
       '<span>'+(i+1)+'. '+DAL.escapeHtml(ch.title)+'</span>'+
     '</div>';
   });
   if(!proj.chapters.length){
-    html += '<div style="padding:12px;font-size:var(--ts-xs);color:var(--c-text-faint);text-align:center">No chapters yet</div>';
+    chapterPanelBody += '<div style="padding:12px;font-size:var(--ts-xs);color:var(--c-text-faint);text-align:center">No chapters yet</div>';
   }
-  html += '</div></div>';
+  chapterPanelBody += '</div>';
+  html += '<div class="chapter-list">'+DAL.panel('manuscript-chapters','Chapters',chapterPanelBody,{defaultOpen:true,badge:proj.chapters.length})+DAL.panel('manuscript-tools','Writer tools','<div class="writer-tool-actions"><button class="btn sm" data-action="show-find">Find</button><button class="btn sm" data-action="show-comments">Comments '+DAL.commentBadge(proj)+'</button><button class="btn sm" data-action="show-sprint">Sprint</button><button class="btn sm" data-action="toggle-sprint-widget">Sprint timer</button><button class="btn sm" data-action="show-corkboard">Corkboard</button></div>',{defaultOpen:true})+'</div>';
 
   // Editor
   html += '<div class="editor-area">';
@@ -240,7 +250,7 @@ DAL.renderManuscript = function(proj){
   html += '<select data-action="format-block"><option value="p">Body Text</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="h3">Subheading</option></select>';
   // Font family
   var fonts = DAL.getFontList();
-  html += '<select data-action="font-family" style="width:100px">';
+  html += '<select class="tb-select" data-action="font-family">';
   fonts.forEach(function(f){ html += '<option value="'+f+'">'+f+'</option>'; });
   html += '</select>';
   // Font size
@@ -259,22 +269,22 @@ DAL.renderManuscript = function(proj){
   html += '<span class="tb-sep"></span>';
   html += '<input type="color" data-action="text-color" style="width:24px;height:24px;border:none;cursor:pointer">';
   html += '<span class="tb-sep"></span>';
-  var aligns = [['justifyLeft','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>','Align Left'],['justifyCenter','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>','Center'],['justifyRight','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg>','Right'],['justifyFull','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>','Justify']];
+  var aligns = [['justifyLeft','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>','Align Left'],['justifyCenter','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>','Center'],['justifyRight','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg>','Right'],['justifyFull','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>','Justify']];
   aligns.forEach(function(a){ html += '<button class="tb-btn" data-action="format-cmd" data-cmd="'+a[0]+'">'+a[1]+'</button>'; });
   html += '<span class="tb-sep"></span>';
-  html += '<button class="tb-btn" data-action="format-cmd" data-cmd="insertUnorderedList"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg></button>';
-  html += '<button class="tb-btn" data-action="format-cmd" data-cmd="insertOrderedList"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4 M4 10h2 M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></button>';
-  html += '<button class="tb-btn" data-action="insert-image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></button>';
-  html += '<button class="tb-btn" data-action="insert-hr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="4" y1="12" x2="20" y2="12"/></svg></button>';
+  html += '<button class="tb-btn" data-action="format-cmd" data-cmd="insertUnorderedList"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg></button>';
+  html += '<button class="tb-btn" data-action="format-cmd" data-cmd="insertOrderedList"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4 M4 10h2 M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></button>';
+  html += '<button class="tb-btn" data-action="insert-image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></button>';
+  html += '<button class="tb-btn" data-action="insert-hr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><line x1="4" y1="12" x2="20" y2="12"/></svg></button>';
   html += '<span class="tb-sep"></span>';
-  html += '<button class="tb-btn" data-action="copy-chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>';
-  html += '<button class="tb-btn" data-action="export-chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M12 3v12 M7 8l5-5 5 5 M5 21h14"/></svg></button>';
-  html += '<button class="tb-btn" data-action="fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M8 3H5a2 2 0 0 0-2 2v3 M21 8V5a2 2 0 0 0-2-2h-3 M3 16v3a2 2 0 0 0 2 2h3 M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>';
+  html += '<button class="tb-btn" data-action="copy-chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>';
+  html += '<button class="tb-btn" data-action="export-chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><path d="M12 3v12 M7 8l5-5 5 5 M5 21h14"/></svg></button>';
+  html += '<button class="tb-btn" data-action="fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><path d="M8 3H5a2 2 0 0 0-2 2v3 M21 8V5a2 2 0 0 0-2-2h-3 M3 16v3a2 2 0 0 0 2 2h3 M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>';
   html += '</div>'; // end toolbar
 
   // Chapter illustrations strip
   if(currentCh){
-    html += '<div class="chapter-illustrations-strip">';
+    html += '<div class="chapter-illustrations-strip asset-dropzone" data-drop="asset" data-asset-bind="chapter:'+currentCh.id+'">';
     html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:var(--ts-xs);font-weight:600;text-transform:uppercase;color:var(--c-text-muted)">Chapter Illustrations</span>'+
       '<span style="font-size:var(--ts-xs);color:var(--c-text-faint)">'+((currentCh.images||[]).length)+'/2</span>'+
       ((currentCh.images||[]).length < 2 ? '<button class="btn sm" data-action="upload-chapter-image" data-cid="'+currentCh.id+'">+ Add Image</button>' : '')+
@@ -283,7 +293,7 @@ DAL.renderManuscript = function(proj){
       html += '<div style="display:flex;gap:8px">';
       currentCh.images.forEach(function(img, ii){
         html += '<div class="chapter-ill-thumb">'+
-          '<img src="'+img.dataUrl+'">'+
+          '<img src="'+DAL.imageSrc(proj,img)+'">'+
           '<button class="chapter-ill-remove" data-action="remove-chapter-image" data-cid="'+currentCh.id+'" data-img-idx="'+ii+'">&times;</button>'+
           '</div>';
       });
@@ -291,6 +301,7 @@ DAL.renderManuscript = function(proj){
     }
     html += '<input type="file" id="chapterImageInput" accept="image/*" style="display:none">';
     html += '</div>';
+    html += DAL.renderAudioBinding(proj, currentCh, 'chapter', currentCh.id);
   }
 
   // Editor surface
@@ -380,10 +391,10 @@ DAL.renderCharacters = function(proj){
   html += '<div class="char-grid">';
   proj.characters.forEach(function(c){
     var initials = (c.name||'?').split(' ').map(function(w){ return w[0]; }).join('').substring(0,2).toUpperCase();
-    html += '<div class="char-card" data-action="select-character" data-cid="'+c.id+'">'+
+    html += '<div class="char-card" data-action="select-character" data-cid="'+c.id+'" data-sel="character:'+c.id+'" data-ctx="character" data-ctx-id="'+c.id+'">'+
       '<div class="char-portrait">'+(c.image?'<img src="'+c.image+'">':DAL.escapeHtml(initials))+'</div>'+
       '<div class="char-name">'+DAL.escapeHtml(c.name)+'</div>'+
-      '<div class="char-role">'+DAL.escapeHtml(c.role||'')+'</div>'+
+      '<div class="char-role">'+DAL.escapeHtml(c.role||'')+'</div>'+(c.deceased?'<span class="badge deceased-badge">Killed</span>':'')+
     '</div>';
   });
   html += '</div>';
@@ -392,12 +403,12 @@ DAL.renderCharacters = function(proj){
 
 DAL.renderCharacterDetail = function(proj, ch){
   var charWC = DAL.countWordsText(ch.appearance)+DAL.countWordsText(ch.personality)+DAL.countWordsText(ch.backstory)+DAL.countWordsText(ch.arc);
-  var html = '<div style="max-width:700px">';
+  var html = '<div class="u-measure">';
   html += '<div style="margin-bottom:16px"><button class="btn sm" data-action="back-to-characters">← Back</button></div>';
   html += '<div style="display:flex;gap:16px;margin-bottom:16px;align-items:flex-start">';
   // Portrait
   html += '<div class="char-portrait" style="width:96px;height:96px;flex-shrink:0;font-size:32px;border-radius:var(--radius-lg)">'+(ch.image?'<img src="'+ch.image+'">':DAL.escapeHtml((ch.name||'?').charAt(0).toUpperCase()))+'</div>';
-  html += '<div style="flex:1"><input class="form-input" id="charName" value="'+DAL.escapeHtml(ch.name||'')+'" placeholder="Character name" style="font-size:var(--ts-lg);font-weight:700;margin-bottom:4px"></div></div>';
+  html += '<div style="flex:1"><input class="form-input" id="charName" value="'+DAL.escapeHtml(ch.name||'')+'" placeholder="Character name" style="font-size:var(--ts-lg);font-weight:700;margin-bottom:4px"><label class="u-hint" style="display:inline-flex;align-items:center;gap:6px;margin-top:6px"><input type="checkbox" data-action="toggle-character-deceased" data-cid="'+ch.id+'"'+(ch.deceased?' checked':'')+'> Killed / deceased</label></div></div>';
 
   // Portrait upload
   html += '<div style="margin-bottom:12px"><input type="file" id="charPortrait" accept="image/*" style="display:none"><button class="btn sm" data-action="upload-portrait" data-cid="'+ch.id+'">Upload Portrait</button> '+(ch.image?'<button class="btn sm danger" data-action="remove-portrait" data-cid="'+ch.id+'">Remove</button>':'')+'</div>';
@@ -413,14 +424,14 @@ DAL.renderCharacterDetail = function(proj, ch){
   });
 
   // Custom fields
-  if(ch.customFields && ch.customFields.length){
-    html += '<div class="form-group"><label class="form-label">Custom Fields</label>';
-    ch.customFields.forEach(function(cf, i){
-      html += '<div style="display:flex;gap:4px;margin-bottom:4px"><input class="form-input" style="flex:1" value="'+DAL.escapeHtml(cf.label)+'" data-cf-label="'+i+'" placeholder="Label"><input class="form-input" style="flex:2" value="'+DAL.escapeHtml(cf.value)+'" data-cf-value="'+i+'" placeholder="Value"></div>';
-    });
-    html += '</div>';
-  }
-  html += '<button class="btn sm" data-action="add-custom-field" data-cid="'+ch.id+'">+ Add Custom Field</button>';
+  if(!ch.customFields) ch.customFields = [];
+  html += '<div class="form-group"><label class="form-label">Custom Fields</label><div class="custom-fields">';
+  ch.customFields.forEach(function(cf, i){
+    cf.type = cf.type || 'text';
+    var value = cf.type === 'boolean' ? '<label class="u-hint"><input type="checkbox" data-cf-value="'+i+'"'+(cf.value===true||cf.value==='true'?' checked':'')+'> Yes</label>' : '<input class="form-input" type="'+(cf.type==='number'?'number':'text')+'" value="'+DAL.escapeHtml(cf.value===undefined?'':String(cf.value))+'" data-cf-value="'+i+'" placeholder="Value">';
+    html += '<div class="custom-field-row"><input class="form-input" value="'+DAL.escapeHtml(cf.label||'')+'" data-cf-label="'+i+'" placeholder="Field name"><select class="form-select" data-cf-type="'+i+'"><option value="text"'+(cf.type==='text'?' selected':'')+'>Text</option><option value="number"'+(cf.type==='number'?' selected':'')+'>Number</option><option value="boolean"'+(cf.type==='boolean'?' selected':'')+'>Yes / No</option></select>'+value+'<div class="custom-field-actions"><button class="btn sm" data-action="move-custom-field" data-cid="'+ch.id+'" data-cf-index="'+i+'" data-dir="-1" aria-label="Move field up">↑</button><button class="btn sm" data-action="move-custom-field" data-cid="'+ch.id+'" data-cf-index="'+i+'" data-dir="1" aria-label="Move field down">↓</button><button class="btn sm danger" data-action="delete-custom-field" data-cid="'+ch.id+'" data-cf-index="'+i+'" aria-label="Delete field">×</button></div></div>';
+  });
+  html += '</div><button class="btn sm" data-action="add-custom-field" data-cid="'+ch.id+'">+ Add Custom Field</button></div>';
 
   // Tags
   html += '<div class="form-group" style="margin-top:12px"><label class="form-label">Tags</label><input class="form-input" data-char-field="tags" value="'+DAL.escapeHtml((ch.tags||[]).join(', '))+'" placeholder="comma, separated, tags"></div>';
@@ -462,11 +473,11 @@ DAL.renderRelationshipMap = function(proj){
   });
   html += '</select></div>';
 
-  html += '<div class="rel-map-container" id="relMapContainer" style="position:relative">';
+  html += '<div class="rel-map-container" id="relMapContainer">';
   html += '<svg class="rel-svg" id="relSvg"></svg>';
 
   // Center node
-  html += '<div class="rel-node center" id="relCenterNode" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">'+
+  html += '<div class="rel-node center" id="relCenterNode">'+
     '<div style="font-weight:700">'+DAL.escapeHtml(center.name)+'</div>'+
     '<div style="font-size:var(--ts-xs);color:var(--c-text-muted)">'+DAL.escapeHtml(center.role||'')+'</div></div>';
 
@@ -484,7 +495,7 @@ DAL.renderRelationshipMap = function(proj){
   });
 
   if(!connectedChars.length){
-    html += '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,60px);text-align:center;color:var(--c-text-faint);font-size:var(--ts-sm)">No relationships yet. Click "Add Relationship" to connect characters.</div>';
+    html += '<div class="canvas-empty rel-map-empty">No relationships yet. Click "Add Relationship" to connect characters.</div>';
   }
 
   html += '</div>';
@@ -553,7 +564,7 @@ DAL.renderPlotThreads = function(proj){
 DAL.renderPlotDetail = function(proj, p){
   var now = Date.now();
   var stale = (now - (p.lastTouched||p.createdAt||0)) > 30*86400000;
-  var html = '<div style="max-width:700px">';
+  var html = '<div class="u-measure">';
   html += '<div style="margin-bottom:16px"><button class="btn sm" data-action="back-to-plots">← Back</button></div>';
   html += '<input class="form-input" style="font-size:var(--ts-lg);font-weight:700;margin-bottom:12px" id="plotTitle" value="'+DAL.escapeHtml(p.title)+'" placeholder="Plot title">';
   html += '<div class="form-row" style="margin-bottom:12px">'+
@@ -599,7 +610,7 @@ DAL.renderLoreNotebook = function(proj){
     if(entry) return DAL.renderLoreDetail(proj, entry);
   }
 
-  var html = '<div class="lore-layout" style="height:calc(var(--app-h,100dvh) - var(--topbar-h) - 52px)">';
+  var html = '<div class="lore-layout u-fill-body">';
   // Sidebar
   html += '<div class="lore-sidebar"><div style="padding:8px 12px;border-bottom:1px solid var(--c-border)"><span style="font-size:var(--ts-xs);font-weight:600;text-transform:uppercase;color:var(--c-text-muted)">Lore</span></div>';
   proj.lore.folders.forEach(function(f){
@@ -630,7 +641,7 @@ DAL.renderLoreNotebook = function(proj){
 };
 
 DAL.renderLoreDetail = function(proj, entry){
-  var html = '<div style="max-width:700px">';
+  var html = '<div class="u-measure">';
   html += '<div style="margin-bottom:16px"><button class="btn sm" data-action="back-to-lore">← Back</button></div>';
   html += '<input class="form-input" style="font-size:var(--ts-lg);font-weight:700;margin-bottom:12px" id="loreTitle" value="'+DAL.escapeHtml(entry.title)+'" placeholder="Entry title">';
   html += '<div class="form-group"><label class="form-label">Category</label><select class="form-select" id="loreFolder">';
@@ -666,7 +677,7 @@ DAL.renderLoreDetail = function(proj, entry){
 /* --- Illustrations / Asset Library --- */
 DAL.renderIllustrations = function(proj){
   if(!proj.images) proj.images = [];
-  var html = '<div style="max-width:900px">';
+  var html = '<div class="u-measure-wide">';
   html += '<div class="section-header"><div class="section-title">Illustrations</div>'+
     '<div style="display:flex;gap:8px">'+
     '<input type="file" id="illustrationUpload" accept="image/*" multiple style="display:none">'+
@@ -684,7 +695,7 @@ DAL.renderIllustrations = function(proj){
     html += '<div class="illustration-grid">';
     proj.images.forEach(function(img, i){
       html += '<div class="illustration-card">';
-      html += '<div class="illustration-thumb">'+(img.dataUrl?'<img src="'+img.dataUrl+'">':'<div class="illustration-placeholder">No image</div>')+'</div>';
+      html += '<div class="illustration-thumb">'+(DAL.imageSrc(proj,img)?'<img src="'+DAL.imageSrc(proj,img)+'">':'<div class="illustration-placeholder">No image</div>')+'</div>';
       html += '<div class="illustration-info">';
       html += '<input class="form-input illustration-name-input" value="'+DAL.escapeHtml(img.name||'')+'" data-illustration-name="'+i+'" placeholder="Image name">';
       html += '<div style="display:flex;align-items:center;gap:4px;margin-top:4px">';
@@ -713,14 +724,14 @@ DAL.renderMindMap = function(proj){
   var mm = proj.mindmap;
 
   var html = '<div class="canvas-toolbar">'+
-    '<button class="tb-btn" data-action="mm-add-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>'+
-    '<button class="tb-btn" data-action="mm-connect" '+(DAL.connectMode?'style="background:var(--c-accent-soft);color:var(--c-accent)"':'')+'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>'+
-    '<button class="tb-btn" data-action="mm-delete-sel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg></button>'+
+    '<button class="tb-btn" data-action="mm-add-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>'+
+    '<button class="tb-btn" data-action="mm-connect" '+(DAL.connectMode?'style="background:var(--c-accent-soft);color:var(--c-accent)"':'')+'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>'+
+    '<button class="tb-btn" data-action="mm-delete-sel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg></button>'+
     '<span class="tb-sep"></span>'+
     DAL.canvasViewControls()+
     '<span style="flex:1"></span>'+DAL.infoIcon('Mind Map: double-tap the canvas to add an idea node. Turn on Connect mode, then tap two nodes in order to draw a line between them. Tap a node to rename it; tap a line to remove it. Drag nodes to rearrange.')+
   '</div>';
-  html += '<div class="canvas-container" id="canvasContainer" style="height:calc(var(--app-h,100dvh) - var(--topbar-h) - 52px - 40px)"><div class="canvas-inner" id="canvasInner"><div class="canvas-stage" id="canvasStage">';
+  html += '<div class="canvas-container u-fill-canvas" id="canvasContainer"><div class="canvas-inner" id="canvasInner"><div class="canvas-stage" id="canvasStage">';
   html += '<svg class="canvas-svg" id="canvasSvg"></svg>';
   mm.nodes.forEach(function(n){
     var sel = n.id === DAL.selectedNodeId ? ' selected' : '';
@@ -731,7 +742,7 @@ DAL.renderMindMap = function(proj){
     '</div>';
   });
   if(!mm.nodes.length){
-    html += '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;max-width:400px;color:var(--c-text-faint);font-size:var(--ts-sm)">'+
+    html += '<div class="canvas-empty">'+
       '<div style="margin-bottom:8px;font-size:var(--ts-lg);color:var(--c-text-muted)">What is a Mind Map?</div>'+
       '<p style="line-height:1.6">A mind map is a free-form visual brainstorming space. Use it to jot down ideas, connect them with lines, and see how different parts of your story relate to each other.</p>'+
       '<p style="margin-top:8px"><strong>Double-click</strong> the canvas to add an idea, <strong>click two nodes in Connect mode</strong> to link them, <strong>click a node</strong> to rename it, and <strong>click a line</strong> to remove it.</p>'+
@@ -763,14 +774,14 @@ DAL.canvasViewControls = function(){
   var grab = DAL.grabMode ? ' active' : '';
   return '<button class="tb-btn'+grab+'" data-action="sg-grab" aria-pressed="'+(DAL.grabMode?'true':'false')+'"'+
       ' title="Grab tool — drag the board around instead of moving scenes" aria-label="Grab tool">'+
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm">'+
       '<path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v7"/>'+
       '<path d="M10 10.5V6a2 2 0 0 0-4 0v8"/>'+
       '<path d="M18 8a2 2 0 0 1 4 0v6a8 8 0 0 1-8 8h-2a8 8 0 0 1-8-8v-1a2 2 0 0 1 4 0"/></svg></button>'+
-    '<button class="tb-btn" data-action="sg-zoom-out" title="Zoom out" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>'+
+    '<button class="tb-btn" data-action="sg-zoom-out" title="Zoom out" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>'+
     '<span class="tb-zoom" data-canvas-zoom aria-live="polite">'+Math.round(zoom*100)+'%</span>'+
-    '<button class="tb-btn" data-action="sg-zoom-in" title="Zoom in" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>'+
-    '<button class="tb-btn" data-action="sg-reset" title="Back to 100% and centre on your scenes" aria-label="Reset zoom and position"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>'+
+    '<button class="tb-btn" data-action="sg-zoom-in" title="Zoom in" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>'+
+    '<button class="tb-btn" data-action="sg-reset" title="Back to 100% and centre on your scenes" aria-label="Reset zoom and position"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>'+
     '<span class="tb-sep"></span>';
 };
 
@@ -1091,23 +1102,32 @@ DAL.renderBookPreview = function(proj){
     (proj.cover.imageDataUrl?'<button class="btn sm danger" data-action="remove-cover">Remove</button>':'')+
     '</div></div>' });
   var tocHtml = '<h1>Table of Contents</h1>';
-  proj.chapters.forEach(function(ch, i){ tocHtml += '<p style="cursor:pointer;color:var(--c-accent)" data-action="bp-goto" data-page="'+(i+2)+'">'+(i+1)+'. '+DAL.escapeHtml(ch.title)+'</p>'; });
+  /* Chapters begin after the cover, the cover controls and this table, so the
+     first chapter is page three. */
+  proj.chapters.forEach(function(ch, i){ tocHtml += '<p style="cursor:pointer;color:var(--c-accent)" data-action="bp-goto" data-page="'+(i+3)+'">'+(i+1)+'. '+DAL.escapeHtml(ch.title)+'</p>'; });
   pages.push({ html: tocHtml });
   proj.chapters.forEach(function(ch){
     var chHtml = '<h2>'+DAL.escapeHtml(ch.title)+'</h2>';
     // Chapter images
     if(ch.images && ch.images.length){
       ch.images.forEach(function(img){
-        chHtml += '<div class="chapter-illustration"><img src="'+img.dataUrl+'">'+(img.name?'<div class="chapter-illustration-caption">'+DAL.escapeHtml(img.name)+'</div>':'')+'</div>';
+        chHtml += '<div class="chapter-illustration"><img src="'+DAL.imageSrc(proj,img)+'">'+(img.name?'<div class="chapter-illustration-caption">'+DAL.escapeHtml(img.name)+'</div>':'')+'</div>';
       });
     }
-    chHtml += ch.contentHTML;
+    /* Wrapping the prose keeps the drop capital on the chapter's own opening
+       paragraph rather than on the first line of the table of contents. */
+    chHtml += '<div class="chapter-prose">'+ch.contentHTML+'</div>';
     pages.push({ html: chHtml });
   });
   if(DAL.readerPage >= pages.length) DAL.readerPage = 0;
 
-  var html = '<div class="book-reader" data-book-theme="'+DAL.readerTheme+'">';
-  html += '<div class="book-reader-toolbar"><div style="font-weight:600">Book Preview</div><div style="margin-left:auto;display:flex;gap:4px;align-items:center"><select class="form-select" style="width:auto;font-size:var(--ts-xs)" data-action="reader-theme"><option value="parchment"'+(DAL.readerTheme==='parchment'?' selected':'')+'>Parchment</option><option value="paper"'+(DAL.readerTheme==='paper'?' selected':'')+'>Paper</option><option value="night"'+(DAL.readerTheme==='night'?' selected':'')+'>Night</option><option value="sepia"'+(DAL.readerTheme==='sepia'?' selected':'')+'>Sepia</option></select></div></div>';
+  /* The narrator needs to know which chapter is on screen so a bound voiceover
+     clip is used in place of the synthesised voice. */
+  var pageCh = proj.chapters[DAL.readerPage - 3] || null;
+  DAL._readAloudCid = pageCh ? pageCh.id : '';
+
+  var html = '<div class="book-reader"'+DAL.readerStyleAttr()+'>';
+  html += '<div class="book-reader-toolbar"><div class="reader-title">Book Preview</div>'+DAL.readerControls()+'</div>';
   html += '<div class="book-page-container"><div class="book-page" id="bookPage">'+pages[DAL.readerPage].html+'<div class="book-page-num">'+(DAL.readerPage+1)+' / '+pages.length+'</div></div></div>';
   html += '<div class="book-nav"><button class="btn sm" data-action="bp-prev" '+(DAL.readerPage<=0?'disabled':'')+'>← Previous</button><span style="font-size:var(--ts-xs);color:var(--c-text-faint)">'+(DAL.readerPage+1)+' / '+pages.length+'</span><button class="btn sm" data-action="bp-next" '+(DAL.readerPage>=pages.length-1?'disabled':'')+'>Next →</button></div></div>';
   return html;
@@ -1204,7 +1224,7 @@ DAL.exportSelectValue = function(id){
 
 /* --- Story Export --- */
 DAL.renderStoryExport = function(proj){
-  var html = '<div style="max-width:700px"><div class="section-header"><div class="section-title">Export</div></div>';
+  var html = '<div class="u-measure"><div class="section-header"><div class="section-title">Export</div></div>';
   html += DAL.renderExportGroups(proj);
 
   html += '<div class="card" style="margin-bottom:12px"><div style="font-weight:600;margin-bottom:8px">Cross-Project Transfer</div><p style="font-size:var(--ts-sm);color:var(--c-text-muted);margin-bottom:8px">Copy a character, lore entry, or plot thread into another project.</p>'+
@@ -1877,10 +1897,9 @@ document.addEventListener('change', function(e){
       var fonts = document.querySelectorAll('font[size="7"]');
       fonts.forEach(function(f){ f.removeAttribute('size'); f.style.fontSize = el.value+'px'; });
       DAL.saveChapterContent();
-    } else if(action === 'reader-theme'){
-      DAL.readerTheme = el.value;
-      var reader = document.querySelector('.book-reader');
-      if(reader) reader.setAttribute('data-book-theme', DAL.readerTheme);
+    } else if(DAL.applyReaderPref(action, el)){
+      /* Handled by the shared reading-preference handler, which repaints the
+         open reader in place instead of re-rendering it. */
     }
   }
   // Transfer item dropdown
@@ -1897,3 +1916,380 @@ document.addEventListener('change', function(e){
     }
   }
 });
+
+/* Writer tools keep their project-specific records under one additive state branch,
+   so older libraries simply receive empty tools when first opened. */
+DAL.writerState = function(){
+  if(!DAL.state.writerTools) DAL.state.writerTools = { projects:{}, typewriter:false, find:{query:'',replace:'',scope:'chapter',caseSensitive:false,wholeWord:false} };
+  if(!DAL.state.writerTools.projects) DAL.state.writerTools.projects = {};
+  return DAL.state.writerTools;
+};
+DAL.writerProject = function(proj){
+  var store = DAL.writerState(), id = proj.id;
+  if(!store.projects[id]) store.projects[id] = { comments:[], structure:null };
+  var data = store.projects[id];
+  if(!data.comments) data.comments = [];
+  return data;
+};
+DAL.currentWriterProject = function(){ return DAL.state.projects[DAL.currentProjectId]; };
+DAL.chapterById = function(proj, id){ return (proj.chapters||[]).find(function(c){ return c.id === id; }); };
+DAL.plainChapter = function(ch){ var d=document.createElement('div'); d.innerHTML=ch.contentHTML||''; return d.textContent||''; };
+DAL.commentBadge = function(proj){ return (DAL.writerProject(proj).comments||[]).filter(function(c){ return !c.resolved; }).length ? '<span class="badge">'+(DAL.writerProject(proj).comments||[]).filter(function(c){ return !c.resolved; }).length+'</span>' : ''; };
+DAL.writerSave = function(proj){ if(proj) proj.updatedAt=Date.now(); DAL.saveState(); };
+
+DAL.findOptions = function(){
+  var f=DAL.writerState().find;
+  return {query:f.query||'',replace:f.replace||'',scope:f.scope||'chapter',caseSensitive:!!f.caseSensitive,wholeWord:!!f.wholeWord};
+};
+DAL.findMatches = function(proj, opts){
+  var query=opts.query||'', flags=opts.caseSensitive?'g':'gi', re, out=[];
+  if(!query) return out;
+  try { re=new RegExp((opts.wholeWord?'\\b':'')+query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+(opts.wholeWord?'\\b':''),flags); } catch(e){ return out; }
+  (proj.chapters||[]).forEach(function(ch){
+    if(opts.scope==='chapter' && ch.id!==DAL.selectedChapterId) return;
+    var text=DAL.plainChapter(ch), m;
+    while((m=re.exec(text))){
+      out.push({cid:ch.id,title:ch.title,index:m.index,length:m[0].length,text:text});
+      if(!m[0].length) re.lastIndex++;
+    }
+  });
+  return out;
+};
+DAL.findContext = function(m){
+  var a=Math.max(0,m.index-55), b=Math.min(m.text.length,m.index+m.length+55);
+  return (a?'…':'')+DAL.escapeHtml(m.text.slice(a,m.index))+'<mark>'+DAL.escapeHtml(m.text.slice(m.index,m.index+m.length))+'</mark>'+DAL.escapeHtml(m.text.slice(m.index+m.length,b))+(b<m.text.length?'…':'');
+};
+DAL.showFindModal = function(){
+  var proj=DAL.currentWriterProject(); if(!proj) return;
+  var o=DAL.findOptions(), matches=DAL.findMatches(proj,o), h='';
+  h += '<div class="writer-toolbar"><input class="form-input" id="findQuery" value="'+DAL.escapeHtml(o.query)+'" placeholder="Find in manuscript"><input class="form-input" id="findReplace" value="'+DAL.escapeHtml(o.replace)+'" placeholder="Replace with"><button class="btn primary" data-action="find-run">Find</button></div>';
+  h += '<div class="writer-toolbar"><select class="form-select" id="findScope"><option value="chapter"'+(o.scope==='chapter'?' selected':'')+'>Current chapter</option><option value="manuscript"'+(o.scope==='manuscript'?' selected':'')+'>Whole manuscript</option></select><label class="u-hint"><input type="checkbox" id="findCase"'+(o.caseSensitive?' checked':'')+'> Case-sensitive</label><label class="u-hint"><input type="checkbox" id="findWhole"'+(o.wholeWord?' checked':'')+'> Whole word</label><span class="writer-status">'+matches.length+' match'+(matches.length===1?'':'es')+'</span></div>';
+  h += '<div class="writer-results">'+(matches.length?matches.map(function(m,i){ return '<div class="writer-result" data-action="find-open" data-find-index="'+i+'"><strong>'+DAL.escapeHtml(m.title)+'</strong><span>'+DAL.findContext(m)+'</span><div><button class="btn sm" data-action="find-replace-one" data-find-index="'+i+'">Replace</button></div></div>'; }).join(''):'<p class="writer-muted">Enter a phrase to search this '+(o.scope==='chapter'?'chapter.':'manuscript.')+'</p>')+'</div>';
+  DAL._findMatches=matches;
+  DAL.modal('Find & Replace',h,{wide:true,footer:'<button class="btn" data-action="close-modal">Close</button><button class="btn" data-action="find-next-modal">Find Next</button><button class="btn primary" data-action="find-replace-all">Replace All</button>'});
+};
+DAL.readFindForm = function(){
+  var f=DAL.writerState().find;
+  f.query=(document.getElementById('findQuery')||{}).value||f.query||''; f.replace=(document.getElementById('findReplace')||{}).value||'';
+  f.scope=(document.getElementById('findScope')||{}).value||f.scope||'chapter'; f.caseSensitive=!!((document.getElementById('findCase')||{}).checked); f.wholeWord=!!((document.getElementById('findWhole')||{}).checked);
+  return DAL.findOptions();
+};
+DAL.replaceTextNodes = function(ch, opts, onlyIndex){
+  var holder=document.createElement('div'); holder.innerHTML=ch.contentHTML||'';
+  var flags=opts.caseSensitive?'g':'gi', re=new RegExp((opts.wholeWord?'\\b':'')+opts.query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+(opts.wholeWord?'\\b':''),flags), walker=document.createTreeWalker(holder,NodeFilter.SHOW_TEXT,null,false), node, count=0, offset=0;
+  while((node=walker.nextNode())){
+    var raw=node.nodeValue, changed=false;
+    node.nodeValue=raw.replace(re,function(match,pos){
+      var absolute=offset+pos;
+      if(onlyIndex!==undefined && absolute!==onlyIndex) return match;
+      count++; changed=true; return opts.replace;
+    });
+    offset+=raw.length;
+    if(onlyIndex!==undefined && count) break;
+  }
+  if(count){ ch.contentHTML=holder.innerHTML; ch.updatedAt=Date.now(); }
+  return count;
+};
+DAL.openFindMatch = function(m){
+  var proj=DAL.currentWriterProject(); if(!m||!proj) return;
+  DAL.selectedChapterId=m.cid; DAL.currentTool='manuscript'; DAL.closeModal(); DAL.render();
+  setTimeout(function(){ var ed=document.getElementById('editorContent'), text=ed&&ed.textContent||'', pos=text.indexOf(m.text.slice(m.index,m.index+m.length)); if(ed&&pos>=0){ ed.focus(); var w=document.createTreeWalker(ed,NodeFilter.SHOW_TEXT,null,false), n, seen=0; while((n=w.nextNode())){ if(seen+n.nodeValue.length>=pos){ var range=document.createRange(); range.setStart(n,pos-seen); range.setEnd(n,Math.min(n.nodeValue.length,pos-seen+m.length)); var sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(range); break; } seen+=n.nodeValue.length; } } },80);
+};
+
+DAL.showComments = function(){
+  var proj=DAL.currentWriterProject(); if(!proj) return; var data=DAL.writerProject(proj), current=DAL.chapterById(proj,DAL.selectedChapterId), h='';
+  h+='<div class="writer-toolbar"><select class="form-select" id="commentChapter">'+(proj.chapters||[]).map(function(c){return '<option value="'+c.id+'"'+(c.id===DAL.selectedChapterId?' selected':'')+'>'+DAL.escapeHtml(c.title)+'</option>';}).join('')+'</select><button class="btn primary" data-action="new-comment">Add comment</button><span class="writer-status">'+data.comments.filter(function(c){return !c.resolved;}).length+' unresolved</span></div>';
+  h+='<div class="comment-list">'+(data.comments.length?data.comments.slice().reverse().map(function(c){var ch=DAL.chapterById(proj,c.chapterId);return '<div class="comment-item'+(c.resolved?' comment-resolved':'')+'"><strong>'+DAL.escapeHtml(ch?ch.title:'Deleted chapter')+'</strong><div>'+DAL.escapeHtml(c.body||'')+'</div>'+(c.anchor?'<div class="comment-meta">“'+DAL.escapeHtml(c.anchor)+'”</div>':'')+'<div class="comment-meta">'+new Date(c.createdAt).toLocaleString()+'</div><div class="writer-tool-actions"><button class="btn sm" data-action="edit-comment" data-comment-id="'+c.id+'">Edit</button><button class="btn sm" data-action="resolve-comment" data-comment-id="'+c.id+'">'+(c.resolved?'Reopen':'Resolve')+'</button><button class="btn sm danger" data-action="delete-comment" data-comment-id="'+c.id+'">Delete</button></div></div>';}).join(''):'<p class="writer-muted">No annotations yet. Add notes to keep revision thoughts beside the manuscript.</p>')+'</div>';
+  DAL.modal('Comments & Annotations',h,{wide:true,footer:'<button class="btn" data-action="close-modal">Close</button>'});
+};
+DAL.commentEditor = function(existing){
+  var proj=DAL.currentWriterProject(), selection=window.getSelection?String(window.getSelection()):'', h='<div class="form-group"><label class="form-label">Chapter</label><select class="form-select" id="commentEditChapter">'+(proj.chapters||[]).map(function(c){return '<option value="'+c.id+'"'+((existing?existing.chapterId:DAL.selectedChapterId)===c.id?' selected':'')+'>'+DAL.escapeHtml(c.title)+'</option>';}).join('')+'</select></div><div class="form-group"><label class="form-label">Anchored text (optional)</label><input class="form-input" id="commentAnchor" value="'+DAL.escapeHtml(existing?existing.anchor:(selection||''))+'" placeholder="Selected manuscript text"></div><div class="form-group"><label class="form-label">Note</label><textarea class="form-textarea" id="commentBody" placeholder="Revision note…">'+DAL.escapeHtml(existing?existing.body:'')+'</textarea></div>';
+  DAL._editingComment=existing?existing.id:null; DAL.modal(existing?'Edit Comment':'Add Comment',h,{footer:'<button class="btn" data-action="show-comments">Cancel</button><button class="btn primary" data-action="save-comment">Save</button>'});
+};
+
+DAL.sprintWords = function(proj){ return DAL.getProjectWordCount(proj).manuscript; };
+DAL.sprintClock = function(){
+  var s=DAL.writerState().sprint, proj=s&&DAL.state.projects[s.projectId]; if(!s||!proj) return null;
+  var remain=Math.max(0,s.endsAt-Date.now()), written=Math.max(0,DAL.sprintWords(proj)-s.startWords); return {remain:remain,written:written,ended:remain<=0};
+};
+DAL.stopSprintTimer = function(){ if(DAL._sprintTimer){clearInterval(DAL._sprintTimer); DAL._sprintTimer=null;} };
+DAL.renderSprintLive = function(){ var c=DAL.sprintClock(), clock=document.getElementById('sprintClock'), words=document.getElementById('sprintWords'); if(!c)return; if(clock){var sec=Math.ceil(c.remain/1000);clock.textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');} if(words)words.textContent=c.written; if(c.ended){DAL.stopSprintTimer(); DAL.writerState().sprint.finishedAt=Date.now(); DAL.saveState(true); DAL.showSprint(true);} };
+DAL.showSprint = function(finished){
+  var proj=DAL.currentWriterProject(); if(!proj)return; var s=DAL.writerState().sprint, c=DAL.sprintClock();
+  /* A sprint that is still running belongs in the floating timer, not a modal the
+     writer has to dismiss before typing another word. Only the closing summary
+     still takes the screen. */
+  if(s&&c&&!(c.ended||finished)){
+    var ws=DAL.sprintWidgetState(); ws.visible=true; ws.collapsed=false; DAL.saveState(true);
+    DAL.closeModal(); DAL.renderSprintWidget();
+    return;
+  }
+  if(s&&c){ var summary=c.ended||finished, h='<div class="sprint-clock" id="sprintClock">'+Math.floor(Math.ceil(c.remain/1000)/60)+':'+String(Math.ceil(c.remain/1000)%60).padStart(2,'0')+'</div><div class="sprint-progress"><div><strong id="sprintWords">'+c.written+'</strong>words written</div><div><strong>'+((s.target||0)?s.target:'—')+'</strong>word target</div></div>'+(summary?'<p class="writer-muted" style="text-align:center">Sprint complete. '+c.written+' manuscript words recorded.</p>':'');
+    DAL.modal(summary?'Sprint Complete':'Writing Sprint',h,{footer:'<button class="btn" data-action="stop-sprint">'+(summary?'Done':'End Sprint')+'</button>'}); if(!summary){DAL.stopSprintTimer();DAL._sprintTimer=setInterval(DAL.renderSprintLive,1000);} return; }
+  var h2='<div class="writer-form-grid"><div class="form-group"><label class="form-label">Minutes</label><input class="form-input" id="sprintMinutes" type="number" min="1" value="25"></div><div class="form-group"><label class="form-label">Word target (optional)</label><input class="form-input" id="sprintTarget" type="number" min="0" placeholder="500"></div></div><p class="writer-muted">The sprint follows your manuscript words even if you change chapters or navigate elsewhere.</p>';
+  DAL.modal('Start Writing Sprint',h2,{footer:'<button class="btn" data-action="close-modal">Cancel</button><button class="btn primary" data-action="start-sprint">Start</button>'});
+};
+
+/* --- Floating sprint timer -------------------------------------------------
+   A modal timer means the writer cannot write while it is open, which defeats
+   the point of a sprint. The timer therefore lives in a small panel that floats
+   over the workspace, can be dragged anywhere, collapsed to a strip, or hidden
+   altogether — and it remembers where it was left. */
+
+DAL.sprintWidgetState = function(){
+  var w = DAL.writerState();
+  if(!w.sprintWidget) w.sprintWidget = { visible:false, collapsed:false, x:null, y:null };
+  var s = w.sprintWidget;
+  /* Fields added after the first release default rather than crash on old saves. */
+  if(typeof s.visible !== 'boolean') s.visible = false;
+  if(typeof s.collapsed !== 'boolean') s.collapsed = false;
+  return s;
+};
+
+/* Keeps the panel on screen after a window resize or a save made on a larger
+   display, so it can never be dragged somewhere it cannot be dragged back from. */
+DAL.clampSprintWidget = function(el){
+  var s = DAL.sprintWidgetState();
+  var w = el.offsetWidth || 210, h = el.offsetHeight || 120;
+  var maxX = Math.max(8, window.innerWidth - w - 8);
+  var maxY = Math.max(8, window.innerHeight - h - 8);
+  var x = s.x == null ? maxX : Math.min(maxX, Math.max(8, s.x));
+  var y = s.y == null ? Math.max(8, window.innerHeight - h - 88) : Math.min(maxY, Math.max(8, s.y));
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  return { x:x, y:y };
+};
+
+DAL.sprintWidgetBody = function(){
+  var s = DAL.sprintWidgetState();
+  var clock = DAL.sprintClock();
+  var sprint = DAL.writerState().sprint;
+  var head = '<div class="sprint-widget-head" data-sprint-grip="1" title="Drag to move">'+
+    '<span class="sprint-widget-grip">\u22ee\u22ee</span>'+
+    '<span class="sprint-widget-title">Sprint</span>'+
+    '<button class="sprint-widget-btn" data-action="collapse-sprint-widget" title="'+(s.collapsed?'Expand':'Collapse')+'">'+(s.collapsed?'\u25b8':'\u25be')+'</button>'+
+    '<button class="sprint-widget-btn" data-action="toggle-sprint-widget" title="Hide timer">\u00d7</button>'+
+  '</div>';
+  if(s.collapsed) return head;
+  if(!clock){
+    return head + '<div class="sprint-widget-body">'+
+      '<p class="sprint-widget-idle">No sprint running.</p>'+
+      '<button class="btn sm primary" data-action="show-sprint">Start a sprint</button>'+
+    '</div>';
+  }
+  var sec = Math.ceil(clock.remain / 1000);
+  var target = sprint && sprint.target ? sprint.target : 0;
+  var pct = target ? Math.min(100, Math.round(clock.written / target * 100)) : 0;
+  return head + '<div class="sprint-widget-body">'+
+    '<div class="sprint-widget-clock" id="sprintWidgetClock">'+Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0')+'</div>'+
+    '<div class="sprint-widget-stats"><span><strong id="sprintWidgetWords">'+clock.written+'</strong> words</span>'+
+      (target ? '<span><strong>'+target+'</strong> target</span>' : '')+'</div>'+
+    (target ? '<div class="sprint-widget-bar"><i id="sprintWidgetBar" style="width:'+pct+'%"></i></div>' : '')+
+    '<button class="btn sm" data-action="stop-sprint">End sprint</button>'+
+  '</div>';
+};
+
+DAL.renderSprintWidget = function(){
+  var s = DAL.sprintWidgetState();
+  var el = document.getElementById('sprintWidget');
+  if(!s.visible){
+    if(el) el.remove();
+    DAL.stopSprintWidgetTimer();
+    return;
+  }
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'sprintWidget';
+    el.className = 'sprint-widget';
+    /* Appended to the body rather than the view, so re-rendering the workspace
+       never destroys a running timer or loses where it was placed. */
+    document.body.appendChild(el);
+  }
+  el.classList.toggle('collapsed', !!s.collapsed);
+  el.innerHTML = DAL.sprintWidgetBody();
+  DAL.clampSprintWidget(el);
+  if(DAL.sprintClock()) DAL.startSprintWidgetTimer(); else DAL.stopSprintWidgetTimer();
+};
+
+DAL.stopSprintWidgetTimer = function(){
+  if(DAL._sprintWidgetTimer){ clearInterval(DAL._sprintWidgetTimer); DAL._sprintWidgetTimer = null; }
+};
+
+DAL.startSprintWidgetTimer = function(){
+  if(DAL._sprintWidgetTimer) return;
+  DAL._sprintWidgetTimer = setInterval(DAL.tickSprintWidget, 1000);
+};
+
+/* Only the numbers are rewritten each second. Replacing the whole panel would
+   fight the pointer while it is being dragged. */
+DAL.tickSprintWidget = function(){
+  var clock = DAL.sprintClock();
+  if(!clock){ DAL.stopSprintWidgetTimer(); DAL.renderSprintWidget(); return; }
+  var sec = Math.ceil(clock.remain / 1000);
+  var c = document.getElementById('sprintWidgetClock');
+  var w = document.getElementById('sprintWidgetWords');
+  var bar = document.getElementById('sprintWidgetBar');
+  var sprint = DAL.writerState().sprint;
+  if(c) c.textContent = Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
+  if(w) w.textContent = clock.written;
+  if(bar && sprint && sprint.target) bar.style.width = Math.min(100, Math.round(clock.written / sprint.target * 100)) + '%';
+  if(clock.ended){
+    DAL.stopSprintWidgetTimer();
+    if(DAL.writerState().sprint && !DAL.writerState().sprint.finishedAt){
+      DAL.writerState().sprint.finishedAt = Date.now();
+      DAL.saveState(true);
+      DAL.showSprint(true);
+    }
+    DAL.renderSprintWidget();
+  }
+};
+
+/* Dragging uses its own pointer handler rather than the list drag system, which
+   exists to reorder items inside a container. A named attribute keeps the two
+   apart so grabbing the timer never looks like reordering a chapter. */
+(function(){
+  var drag = null;
+
+  document.addEventListener('pointerdown', function(e){
+    var grip = e.target.closest ? e.target.closest('[data-sprint-grip]') : null;
+    if(!grip || e.target.closest('button')) return;
+    var el = document.getElementById('sprintWidget');
+    if(!el) return;
+    var box = el.getBoundingClientRect();
+    drag = { el:el, dx:e.clientX - box.left, dy:e.clientY - box.top, pointerId:e.pointerId, moved:false };
+    el.classList.add('dragging');
+  });
+
+  document.addEventListener('pointermove', function(e){
+    if(!drag || (drag.pointerId !== undefined && e.pointerId !== drag.pointerId)) return;
+    e.preventDefault();
+    drag.moved = true;
+    var w = drag.el.offsetWidth, h = drag.el.offsetHeight;
+    var x = Math.min(Math.max(8, e.clientX - drag.dx), Math.max(8, window.innerWidth - w - 8));
+    var y = Math.min(Math.max(8, e.clientY - drag.dy), Math.max(8, window.innerHeight - h - 8));
+    drag.el.style.left = x + 'px';
+    drag.el.style.top = y + 'px';
+  }, { passive:false });
+
+  function release(){
+    if(!drag) return;
+    drag.el.classList.remove('dragging');
+    if(drag.moved){
+      var s = DAL.sprintWidgetState();
+      s.x = parseInt(drag.el.style.left, 10);
+      s.y = parseInt(drag.el.style.top, 10);
+      DAL.saveState(true);
+    }
+    drag = null;
+  }
+
+  document.addEventListener('pointerup', release);
+  document.addEventListener('pointercancel', release);
+
+  window.addEventListener('resize', function(){
+    var el = document.getElementById('sprintWidget');
+    if(el) DAL.clampSprintWidget(el);
+  });
+})();
+
+/* The widget survives view changes, so it is refreshed after every render. */
+(function(){
+  var baseAfter = DAL.afterRender;
+  DAL.afterRender = function(){
+    if(baseAfter) baseAfter();
+    if(DAL.renderSprintWidget) DAL.renderSprintWidget();
+  };
+})();
+
+DAL.syllables = function(word){ word=(word||'').toLowerCase().replace(/[^a-z]/g,''); if(word.length<3)return word?1:0; var n=(word.replace(/e$/,'').match(/[aeiouy]+/g)||[]).length; return Math.max(1,n); };
+DAL.report = function(proj){
+  var stop={the:1,and:1,that:1,have:1,with:1,this:1,from:1,were:1,been:1,they:1,will:1,into:1,about:1,which:1,when:1,then:1,than:1,them:1,there:1,their:1,what:1,your:1,said:1,just:1,like:1,over:1,also:1,only:1,very:1}, filler=['just','very','really','quite','rather','somewhat','maybe','actually','basically','suddenly'], total={words:0,sentences:0,paragraphs:0,syllables:0,adverbs:0,passive:0,counts:{},longest:[],fillers:{}};
+  var one=function(ch){var text=DAL.plainChapter(ch), words=text.match(/[A-Za-z][A-Za-z'-]*/g)||[], sentences=text.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[], paras=(text.trim()?text.trim().split(/\n\s*\n+/):[]), r={title:ch.title,words:words.length,sentences:sentences.length,paragraphs:paras.length}; words.forEach(function(w){var x=w.toLowerCase();total.syllables+=DAL.syllables(x);total.counts[x]=(total.counts[x]||0)+1;if(/ly$/.test(x))total.adverbs++;if(filler.indexOf(x)>=0)total.fillers[x]=(total.fillers[x]||0)+1;}); sentences.forEach(function(s){total.longest.push({title:ch.title,text:s.trim(),words:(s.match(/[A-Za-z][A-Za-z'-]*/g)||[]).length}); if(/\b(?:was|were|is|are|be|been|being)\s+\w+(?:ed|en)\b/i.test(s))total.passive++;}); total.words+=r.words;total.sentences+=r.sentences;total.paragraphs+=r.paragraphs;return r;};
+  var chapters=(proj.chapters||[]).map(one); total.longest.sort(function(a,b){return b.words-a.words;}); var repeated=Object.keys(total.counts).filter(function(w){return !stop[w]&&w.length>2;}).sort(function(a,b){return total.counts[b]-total.counts[a];}).slice(0,10); /* Flesch–Kincaid grade = .39(words/sentences) + 11.8(syllables/words) - 15.59. */ total.grade=total.words?Math.max(0,.39*(total.words/Math.max(1,total.sentences))+11.8*(total.syllables/total.words)-15.59):0; total.repeated=repeated.map(function(w){return w+' ('+total.counts[w]+')';});return {chapters:chapters,total:total};
+};
+DAL.showReadability = function(){var proj=DAL.currentWriterProject();if(!proj)return;var r=DAL.report(proj),t=r.total,h='<div class="report-grid"><div class="report-metric"><strong>'+t.words+'</strong>words</div><div class="report-metric"><strong>'+t.sentences+'</strong>sentences</div><div class="report-metric"><strong>'+t.paragraphs+'</strong>paragraphs</div><div class="report-metric"><strong>'+(t.sentences?(t.words/t.sentences).toFixed(1):'0')+'</strong>avg sentence length</div><div class="report-metric"><strong>'+t.grade.toFixed(1)+'</strong>Flesch–Kincaid grade</div><div class="report-metric"><strong>'+t.adverbs+' / '+t.passive+'</strong>adverbs / passive candidates</div></div><h3>Chapters</h3><div class="writer-report-list">'+r.chapters.map(function(c){return '<div class="writer-result"><strong>'+DAL.escapeHtml(c.title)+'</strong><span>'+c.words+' words · '+c.sentences+' sentences · '+c.paragraphs+' paragraphs</span></div>';}).join('')+'</div><h3>Most repeated words</h3><p>'+ (t.repeated.join(', ')||'No non-stopword repetitions yet.')+'</p><h3>Filler / crutch words</h3><p>'+ (Object.keys(t.fillers).map(function(w){return w+' ('+t.fillers[w]+')';}).join(', ')||'None detected.')+'</p><h3>Longest sentences</h3><div class="writer-report-list">'+t.longest.slice(0,5).map(function(x){return '<div class="writer-result"><strong>'+DAL.escapeHtml(x.title)+' · '+x.words+' words</strong><span>'+DAL.escapeHtml(x.text)+'</span></div>';}).join('')+'</div>';DAL.modal('Manuscript Report',h,{wide:true,footer:'<button class="btn primary" data-action="close-modal">Done</button>'});};
+
+DAL.BEAT_TEMPLATES={three:[['Setup','Introduce the ordinary world and story promise.'],['Inciting incident','Disrupt the status quo.'],['First turning point','Commit to the central conflict.'],['Midpoint','Raise stakes with a reversal or revelation.'],['Second turning point','Force the final choice.'],['Climax','Confront the central conflict.'],['Resolution','Show the changed world.']],cat:[['Opening Image','A snapshot of the protagonist before change.'],['Theme Stated','A question or lesson is voiced.'],['Setup','Introduce stakes, wants, and flaws.'],['Catalyst','A life-changing event lands.'],['Debate','Hesitation before commitment.'],['Break into Two','Enter the new world.'],['B Story','Introduce the relationship thread.'],['Midpoint','A false victory or defeat.'],['All Is Lost','The lowest point.'],['Finale','Prove the theme through action.'],['Final Image','Mirror the opening image after change.']],hero:[['Ordinary World','Establish the familiar life.'],['Call to Adventure','Present the disruptive invitation.'],['Refusal of the Call','Show resistance or fear.'],['Meeting the Mentor','Gain guidance or a tool.'],['Crossing the Threshold','Enter the unfamiliar world.'],['Tests, Allies, Enemies','Learn the new rules.'],['Ordeal','Face the central fear.'],['Reward','Claim insight or treasure.'],['Road Back','Turn toward home.'],['Resurrection','Pass a final, transforming test.'],['Return with the Elixir','Bring change back to the world.']]};
+DAL.showBeats = function(){var proj=DAL.currentWriterProject();if(!proj)return;var d=DAL.writerProject(proj), cur=d.structure,h='<p class="writer-muted">Choose a story structure. It creates a separate checklist and never changes your chapters.</p><div class="writer-tool-actions"><button class="btn" data-action="apply-beats" data-template="three">Three-Act</button><button class="btn" data-action="apply-beats" data-template="cat">Save the Cat</button><button class="btn" data-action="apply-beats" data-template="hero">Hero’s Journey</button></div>';
+ if(cur){h+='<div class="beat-list">'+cur.beats.map(function(b,i){return '<div class="beat-row"><input type="checkbox" data-action="toggle-beat" data-beat-index="'+i+'"'+(b.done?' checked':'')+'><label><strong>'+DAL.escapeHtml(b.title)+'</strong><span class="writer-muted"> '+DAL.escapeHtml(b.note)+'</span></label><select class="form-select" data-action="attach-beat" data-beat-index="'+i+'"><option value="">Attach to chapter…</option>'+(proj.chapters||[]).map(function(c){return '<option value="'+c.id+'"'+(b.chapterId===c.id?' selected':'')+'>'+DAL.escapeHtml(c.title)+'</option>';}).join('')+'</select></div>';}).join('')+'</div>';}
+ DAL.modal('Story Structure Templates',h,{wide:true,footer:'<button class="btn" data-action="close-modal">Done</button>'});};
+DAL.showCorkboard=function(){var proj=DAL.currentWriterProject();if(!proj)return;var h='<p class="writer-muted">Drag cards to reorder. Titles, synopsis, and status save as you edit.</p><div class="corkboard" data-drop="chapter" data-sort-item="[data-drag=\"chapter\"]">'+(proj.chapters||[]).map(function(c){var syn=c.synopsis||'';return '<article class="cork-card" data-drag="chapter:'+c.id+'" data-drag-label="'+DAL.escapeHtml(c.title)+'"><span class="cork-grip" data-drag-handle=".cork-grip">⋮⋮</span><input class="form-input" data-cork-field="title" data-cork-id="'+c.id+'" value="'+DAL.escapeHtml(c.title)+'" aria-label="Chapter title"><textarea class="form-textarea" data-cork-field="synopsis" data-cork-id="'+c.id+'" placeholder="Synopsis">'+DAL.escapeHtml(syn)+'</textarea><select class="form-select" data-cork-field="status" data-cork-id="'+c.id+'"><option value="draft"'+((c.status||'draft')==='draft'?' selected':'')+'>Draft</option><option value="revising"'+(c.status==='revising'?' selected':'')+'>Revising</option><option value="complete"'+(c.status==='complete'?' selected':'')+'>Complete</option></select><div class="cork-meta"><span>'+DAL.countWords(c.contentHTML)+' words</span><span>'+DAL.escapeHtml(c.status||'draft')+'</span></div></article>';}).join('')+'</div>';DAL.modal('Corkboard',h,{wide:true,footer:'<button class="btn primary" data-action="close-modal">Done</button>'});};
+
+DAL.makeSnapshot=function(proj,name){var wc=DAL.getProjectWordCount(proj),snap=DAL.clone(proj);delete snap.versions;delete snap.history;delete snap.folderHandle;proj.versions=proj.versions||[];proj.versions.push({ts:Date.now(),auto:false,name:name||'',snapWords:wc.total,data:snap});if(proj.versions.length>25)proj.versions.shift();DAL.saveState();};
+DAL.showVersions=function(){var proj=DAL.currentWriterProject();if(!proj)return;var h='<div class="writer-toolbar"><input class="form-input" id="snapshotName" placeholder="Optional snapshot name"><button class="btn primary" data-action="take-snapshot">Take snapshot</button></div><div class="version-list">'+((proj.versions||[]).slice().reverse().map(function(v,ri){var i=proj.versions.length-1-ri;return '<div class="version-item"><strong>'+DAL.escapeHtml(v.name||((v.auto?'Auto snapshot':'Untitled snapshot')))+'</strong><div class="comment-meta">'+new Date(v.ts).toLocaleString()+' · '+v.snapWords+' words</div><div class="writer-tool-actions"><button class="btn sm" data-action="preview-version" data-version-index="'+i+'">Preview</button><button class="btn sm danger" data-action="confirm-restore-version" data-version-index="'+i+'">Restore</button></div></div>';}).join('')||'<p class="writer-muted">No snapshots yet.</p>')+'</div>';DAL.modal('Version History',h,{wide:true,footer:'<button class="btn" data-action="close-modal">Close</button>'});};
+DAL.previewVersion=function(i){var p=DAL.currentWriterProject(),v=p&&p.versions&&p.versions[i];if(!v)return;var snap=v.data||{},h='<div class="writer-status">'+new Date(v.ts).toLocaleString()+' · '+v.snapWords+' words</div><div class="writer-report-list">'+(snap.chapters||[]).map(function(c){return '<div class="writer-result"><strong>'+DAL.escapeHtml(c.title)+'</strong><span>'+DAL.escapeHtml(DAL.plainChapter(c)).slice(0,350)+'</span></div>';}).join('')+'</div>';DAL.modal('Snapshot Preview',h,{wide:true,footer:'<button class="btn" data-action="show-versions">Back</button><button class="btn danger" data-action="confirm-restore-version" data-version-index="'+i+'">Restore this snapshot</button>'});};
+DAL.restoreVersionConfirm=function(i){var p=DAL.currentWriterProject();DAL.modal('Restore Snapshot','<p>This will replace the current project with the selected snapshot. The current state is first added to undo history.</p>',{footer:'<button class="btn" data-action="show-versions">Cancel</button><button class="btn danger" data-action="restore-version-now" data-version-index="'+i+'">Restore snapshot</button>'});};
+DAL.toggleTypewriter=function(){var s=DAL.writerState();s.typewriter=!s.typewriter;DAL.saveState(true);var ed=document.getElementById('editorContent');if(ed)ed.closest('.editor-area').classList.toggle('typewriter-on',s.typewriter);DAL.toast('Typewriter scrolling '+(s.typewriter?'on':'off'),'info');};
+DAL.typewriterScroll=function(editor){var s=DAL.writerState();if(!s.typewriter)return;var range=window.getSelection&&window.getSelection().rangeCount?window.getSelection().getRangeAt(0):null, surface=editor.closest('.editor-surface');if(!range||!surface)return;var rect=range.getBoundingClientRect(),sr=surface.getBoundingClientRect();if(rect.top)surface.scrollTop+=rect.top-(sr.top+sr.height/2);};
+
+DAL.DROP.chapter=function(payload,zone,index){if(payload.kind!=='chapter')return;var p=DAL.currentWriterProject(),from=(p.chapters||[]).findIndex(function(c){return c.id===payload.id;});if(from<0)return;DAL.pushHistory();DAL.moveInArray(p.chapters,from,index===null?p.chapters.length:index);p.chapters.forEach(function(c,i){c.order=i;});DAL.writerSave(p);if(document.getElementById('modalBackdrop'))DAL.showCorkboard();else DAL.render();};
+DAL.SELECT.chapter={label:function(id){var p=DAL.currentWriterProject(),c=p&&DAL.chapterById(p,id);return c?c.title:'Chapter';},copy:function(id){var p=DAL.currentWriterProject();return DAL.clone(DAL.chapterById(p,id));},remove:function(id){var p=DAL.currentWriterProject();DAL.pushHistory();p.chapters=p.chapters.filter(function(c){return c.id!==id;});if(DAL.selectedChapterId===id)DAL.selectedChapterId=p.chapters[0]&&p.chapters[0].id;DAL.writerSave(p);DAL.render();},duplicate:function(id){DAL.PASTE.chapter(DAL.SELECT.chapter.copy(id));}};
+DAL.PASTE.chapter=function(payload){var p=DAL.currentWriterProject();if(!p||!payload)return;DAL.pushHistory();payload.id=DAL.uid('ch');payload.title=(payload.title||'Chapter')+' Copy';payload.createdAt=Date.now();payload.updatedAt=Date.now();p.chapters.push(payload);p.chapters.forEach(function(c,i){c.order=i;});DAL.selectedChapterId=payload.id;DAL.writerSave(p);DAL.render();};
+DAL.CTX.chapter=function(id){var p=DAL.currentWriterProject(),i=(p.chapters||[]).findIndex(function(c){return c.id===id;});return [{heading:'Chapter'},{label:'Move up',action:'move-chapter',data:{cid:id,dir:-1},disabled:i<=0},{label:'Move down',action:'move-chapter',data:{cid:id,dir:1},disabled:i<0||i>=p.chapters.length-1},{divider:true},{label:'Duplicate',action:'edit-duplicate'},{label:'Delete',action:'edit-delete',danger:true}];};
+DAL.SELECT.character={label:function(id){var p=DAL.currentWriterProject(),c=p&&(p.characters||[]).find(function(x){return x.id===id;});return c?c.name:'Character';},copy:function(id){var p=DAL.currentWriterProject();return DAL.clone((p.characters||[]).find(function(c){return c.id===id;}));},remove:function(id){var p=DAL.currentWriterProject();DAL.pushHistory();p.characters=p.characters.filter(function(c){return c.id!==id;});if(DAL.selectedCharId===id)DAL.selectedCharId=null;DAL.writerSave(p);DAL.render();},duplicate:function(id){DAL.PASTE.character(DAL.SELECT.character.copy(id));}};
+DAL.PASTE.character=function(payload){var p=DAL.currentWriterProject();if(!p||!payload)return;DAL.pushHistory();payload.id=DAL.uid('char');payload.name=(payload.name||'Character')+' Copy';payload.createdAt=Date.now();p.characters.push(payload);DAL.selectedCharId=payload.id;DAL.writerSave(p);DAL.render();};
+DAL.CTX.character=function(id){return [{heading:'Character'},{label:'Open',action:'select-character',data:{cid:id}},{label:'Duplicate',action:'edit-duplicate'},{divider:true},{label:'Delete',action:'edit-delete',danger:true}];};
+
+DAL.handleWriterAction=function(action,el){
+  var p=DAL.currentWriterProject(), i, m, o, d, c;
+  if(action==='show-find'){DAL.showFindModal();return true;}
+  if(action==='find-run'){DAL.readFindForm();DAL.showFindModal();return true;}
+  if(action==='find-next' || action==='find-next-modal'){o=document.getElementById('findQuery')?DAL.readFindForm():DAL.findOptions();var list=DAL.findMatches(p,o);if(!list.length){DAL.toast('No matches found','info');return true;} DAL._findNext=(DAL._findNext||0)%list.length;DAL.openFindMatch(list[DAL._findNext++]);return true;}
+  if(action==='find-open'){m=(DAL._findMatches||[])[parseInt(el.getAttribute('data-find-index'),10)];DAL.openFindMatch(m);return true;}
+  if(action==='find-replace-one'){o=DAL.readFindForm();m=(DAL._findMatches||[])[parseInt(el.getAttribute('data-find-index'),10)];c=m&&DAL.chapterById(p,m.cid);if(c&&o.query){DAL.pushHistory();var n=DAL.replaceTextNodes(c,o,m.index);DAL.writerSave(p);DAL.toast(n?'Replaced one match':'Match is no longer available',n?'success':'info');DAL.showFindModal();}return true;}
+  if(action==='find-replace-all'){o=DAL.readFindForm();if(!o.query)return true;var total=0;DAL.pushHistory();(p.chapters||[]).forEach(function(ch){if(o.scope==='manuscript'||ch.id===DAL.selectedChapterId)total+=DAL.replaceTextNodes(ch,o);});if(total)DAL.writerSave(p);DAL.toast(total+' replacement'+(total===1?'':'s')+' made',total?'success':'info');DAL.showFindModal();return true;}
+  if(action==='show-comments'){DAL.showComments();return true;}
+  if(action==='new-comment'){DAL.commentEditor(null);return true;}
+  if(action==='edit-comment'){d=DAL.writerProject(p);c=d.comments.find(function(x){return x.id===el.getAttribute('data-comment-id');});if(c)DAL.commentEditor(c);return true;}
+  if(action==='save-comment'){d=DAL.writerProject(p);var id=DAL._editingComment, body=(document.getElementById('commentBody')||{}).value||'', chapter=(document.getElementById('commentEditChapter')||{}).value||DAL.selectedChapterId, anchor=(document.getElementById('commentAnchor')||{}).value||'';c=id&&d.comments.find(function(x){return x.id===id;});if(c){c.body=body;c.chapterId=chapter;c.anchor=anchor;c.updatedAt=Date.now();}else d.comments.push({id:DAL.uid('comment'),chapterId:chapter,anchor:anchor,body:body,resolved:false,createdAt:Date.now()});DAL.writerSave(p);DAL.showComments();return true;}
+  if(action==='resolve-comment'){d=DAL.writerProject(p);c=d.comments.find(function(x){return x.id===el.getAttribute('data-comment-id');});if(c){c.resolved=!c.resolved;DAL.writerSave(p);DAL.showComments();}return true;}
+  if(action==='delete-comment'){d=DAL.writerProject(p);d.comments=d.comments.filter(function(x){return x.id!==el.getAttribute('data-comment-id');});DAL.writerSave(p);DAL.showComments();return true;}
+  if(action==='show-sprint'){DAL.showSprint(false);return true;}
+  if(action==='start-sprint'){var min=Math.max(1,parseInt((document.getElementById('sprintMinutes')||{}).value,10)||25),target=Math.max(0,parseInt((document.getElementById('sprintTarget')||{}).value,10)||0);DAL.writerState().sprint={projectId:p.id,startedAt:Date.now(),endsAt:Date.now()+min*60000,startWords:DAL.sprintWords(p),target:target};DAL.saveState(true);DAL.showSprint(false);return true;}
+  if(action==='stop-sprint'){DAL.stopSprintTimer();DAL.stopSprintWidgetTimer();if(DAL.writerState().sprint)DAL.writerState().sprint=null;DAL.saveState(true);DAL.closeModal();DAL.renderSprintWidget();return true;}
+  if(action==='toggle-sprint-widget'){var sw=DAL.sprintWidgetState();sw.visible=!sw.visible;if(sw.visible)sw.collapsed=false;DAL.saveState(true);DAL.renderSprintWidget();DAL.toast(sw.visible?'Sprint timer shown \u2014 drag it anywhere':'Sprint timer hidden');return true;}
+  if(action==='collapse-sprint-widget'){var sc=DAL.sprintWidgetState();sc.collapsed=!sc.collapsed;DAL.saveState(true);DAL.renderSprintWidget();return true;}
+  if(action==='show-readability'){DAL.showReadability();return true;}
+  if(action==='show-beats'){DAL.showBeats();return true;}
+  if(action==='apply-beats'){var tmpl=DAL.BEAT_TEMPLATES[el.getAttribute('data-template')],wd=DAL.writerProject(p);if(tmpl){wd.structure={template:el.getAttribute('data-template'),beats:tmpl.map(function(b){return {title:b[0],note:b[1],done:false,chapterId:''};})};DAL.writerSave(p);DAL.showBeats();}return true;}
+  if(action==='toggle-beat'){wd=DAL.writerProject(p);i=parseInt(el.getAttribute('data-beat-index'),10);if(wd.structure&&wd.structure.beats[i]){wd.structure.beats[i].done=!wd.structure.beats[i].done;DAL.writerSave(p);}return true;}
+  if(action==='attach-beat'){wd=DAL.writerProject(p);i=parseInt(el.getAttribute('data-beat-index'),10);if(wd.structure&&wd.structure.beats[i]){wd.structure.beats[i].chapterId=el.value;DAL.writerSave(p);}return true;}
+  if(action==='show-corkboard'){DAL.showCorkboard();return true;}
+  if(action==='show-versions'){DAL.showVersions();return true;}
+  if(action==='take-snapshot'){var named=(document.getElementById('snapshotName')||{}).value||'';DAL.makeSnapshot(p,named.trim());DAL.toast('Snapshot saved','success');DAL.showVersions();return true;}
+  if(action==='preview-version'){DAL.previewVersion(parseInt(el.getAttribute('data-version-index'),10));return true;}
+  if(action==='confirm-restore-version'){DAL.restoreVersionConfirm(parseInt(el.getAttribute('data-version-index'),10));return true;}
+  if(action==='restore-version-now'){i=parseInt(el.getAttribute('data-version-index'),10);var v=p.versions&&p.versions[i];if(v){DAL.pushHistory();var restored=DAL.clone(v.data);delete restored.versions;delete restored.history;Object.assign(p,restored);DAL.saveState(true);DAL.closeModal();DAL.render();DAL.toast('Snapshot restored','success');}return true;}
+  if(action==='toggle-typewriter'){DAL.toggleTypewriter();return true;}
+  if(action==='move-chapter'){i=(p.chapters||[]).findIndex(function(x){return x.id===el.getAttribute('data-cid');});var to=i+parseInt(el.getAttribute('data-dir'),10);if(i>=0&&to>=0&&to<p.chapters.length){DAL.pushHistory();var item=p.chapters.splice(i,1)[0];p.chapters.splice(to,0,item);p.chapters.forEach(function(x,n){x.order=n;});DAL.writerSave(p);DAL.render();}return true;}
+  if(action==='toggle-character-deceased'){c=(p.characters||[]).find(function(x){return x.id===el.getAttribute('data-cid');});if(c){c.deceased=!c.deceased;DAL.writerSave(p);DAL.render();}return true;}
+  if(action==='add-custom-field'){c=(p.characters||[]).find(function(x){return x.id===el.getAttribute('data-cid');});if(c){c.customFields=c.customFields||[];c.customFields.push({label:'New field',type:'text',value:''});DAL.writerSave(p);DAL.render();}return true;}
+  if(action==='delete-custom-field'||action==='move-custom-field'){c=(p.characters||[]).find(function(x){return x.id===el.getAttribute('data-cid');});i=parseInt(el.getAttribute('data-cf-index'),10);if(c&&c.customFields&&c.customFields[i]){if(action==='delete-custom-field')c.customFields.splice(i,1);else {var next=i+parseInt(el.getAttribute('data-dir'),10);if(next>=0&&next<c.customFields.length){var field=c.customFields.splice(i,1)[0];c.customFields.splice(next,0,field);}}DAL.writerSave(p);DAL.render();}return true;}
+  return false;
+};
+DAL._storyClickBase=DAL.handleStoryClick;
+DAL.handleStoryClick=function(action,el,e){if(DAL.handleWriterAction(action,el,e))return;return DAL._storyClickBase(action,el,e);};
+
+/* These fields are deliberately updated on input, matching the rest of the sheet
+   and corkboard, while boolean/type controls settle on change. */
+document.addEventListener('input',function(e){
+  var el=e.target,p=DAL.currentWriterProject(),c;
+  if(!p)return;
+  if(el.hasAttribute('data-cork-field')){c=DAL.chapterById(p,el.getAttribute('data-cork-id'));if(c){c[el.getAttribute('data-cork-field')]=el.value;c.updatedAt=Date.now();DAL.writerSave(p);}return;}
+  if(el.hasAttribute('data-cf-value')&&el.type==='checkbox'){c=(p.characters||[]).find(function(x){return x.id===DAL.selectedCharId;});if(c&&c.customFields){c.customFields[parseInt(el.getAttribute('data-cf-value'),10)].value=el.checked;DAL.writerSave(p);}return;}
+  if(el.id==='editorContent') DAL.typewriterScroll(el);
+});
+document.addEventListener('change',function(e){
+  var el=e.target,p=DAL.currentWriterProject(),c;
+  if(!p)return;
+  if(el.hasAttribute('data-cork-field')){c=DAL.chapterById(p,el.getAttribute('data-cork-id'));if(c){c[el.getAttribute('data-cork-field')]=el.value;c.updatedAt=Date.now();DAL.writerSave(p);if(el.getAttribute('data-cork-field')==='status')DAL.showCorkboard();}return;}
+  if(el.hasAttribute('data-cf-type')||el.hasAttribute('data-cf-value')){c=(p.characters||[]).find(function(x){return x.id===DAL.selectedCharId;});if(c&&c.customFields){var n=parseInt(el.getAttribute('data-cf-type')||el.getAttribute('data-cf-value'),10),f=c.customFields[n];if(el.hasAttribute('data-cf-type')){f.type=el.value;if(f.type==='boolean')f.value=false;else if(f.type==='number')f.value=Number(f.value)||0;}else if(el.type==='checkbox')f.value=el.checked;else f.value=el.value;DAL.writerSave(p);if(el.hasAttribute('data-cf-type'))DAL.render();}return;}
+  /* A <select data-action> commits on change, never on click, so its handler is
+     unreachable without this. Checkboxes are deliberately excluded — they already
+     fire through the click dispatcher, and routing both would toggle twice. */
+  if(el.tagName === 'SELECT' && el.hasAttribute('data-action')) DAL.handleWriterAction(el.getAttribute('data-action'), el);
+});
+
+
+DAL._afterStoryRenderBase=DAL.afterStoryRender;
+DAL.afterStoryRender=function(proj){DAL._afterStoryRenderBase(proj);var ed=document.getElementById('editorContent');if(ed){var tools=DAL.writerState();ed.closest('.editor-area').classList.toggle('typewriter-on',!!tools.typewriter);}};

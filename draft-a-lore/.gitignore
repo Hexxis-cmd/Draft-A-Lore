@@ -11,6 +11,11 @@ android/local.properties
 android/capacitor-cordova-android-plugins/build/
 .gradle/
 *.keystore
+# The signing key and its passwords never belong in a public repository.
+keystore/*.p12
+keystore/*.jks
+keystore/keystore.properties
 *.jks
+*.p12
 .DS_Store
 __pycache__/

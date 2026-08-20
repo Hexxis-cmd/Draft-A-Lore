@@ -20,6 +20,8 @@ DAL.ensureAdventure = function(proj){
      saved by an earlier build opens with its work intact. */
   if(!adv.stats) adv.stats = [];
   if(!adv.traits) adv.traits = [];
+  if(!adv.flags) adv.flags = [];
+  adv.flags.forEach(function(f){ if(!f.id) f.id = DAL.uid('flag'); });
   if(!adv.items) adv.items = [];
   if(!adv.nodes) adv.nodes = [];
   if(!adv.rules) adv.rules = { lockedChoices: 'lock', failures: [] };
@@ -34,17 +36,17 @@ DAL.renderStoryGraph = function(proj){
   if(!adv.nodes) adv.nodes = [];
 
   var html = '<div class="canvas-toolbar">'+
-    '<button class="tb-btn" data-action="sg-add-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>'+
-    '<button class="tb-btn" data-action="sg-connect" '+(DAL.connectMode?'style="background:var(--c-accent-soft);color:var(--c-accent)"':'')+'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>'+
-    '<button class="tb-btn" data-action="sg-delete-sel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg></button>'+
+    '<button class="tb-btn" data-action="sg-add-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>'+
+    '<button class="tb-btn" data-action="sg-connect" '+(DAL.connectMode?'style="background:var(--c-accent-soft);color:var(--c-accent)"':'')+'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>'+
+    '<button class="tb-btn" data-action="sg-delete-sel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg></button>'+
     '<span class="tb-sep" style="width:1px;height:20px;background:var(--c-border);margin:0 4px"></span>'+
-    '<button class="tb-btn" data-action="sg-checkup" title="Story checkup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="9 11 12 14 20 6"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></button>'+
+    '<button class="tb-btn" data-action="sg-checkup" title="Story checkup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><polyline points="9 11 12 14 20 6"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></button>'+
     '<span class="tb-sep" style="width:1px;height:20px;background:var(--c-border);margin:0 4px"></span>'+
     DAL.canvasViewControls()+
-    '<button class="tb-btn" data-action="fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M8 3H5a2 2 0 0 0-2 2v3 M21 8V5a2 2 0 0 0-2-2h-3 M3 16v3a2 2 0 0 0 2 2h3 M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>'+
+    '<button class="tb-btn" data-action="fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><path d="M8 3H5a2 2 0 0 0-2 2v3 M21 8V5a2 2 0 0 0-2-2h-3 M3 16v3a2 2 0 0 0 2 2h3 M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>'+
   '</div>';
 
-  html += '<div class="canvas-container" id="canvasContainer" style="height:calc(var(--app-h,100dvh) - var(--topbar-h) - 52px - 40px)"><div class="canvas-inner" id="canvasInner"><div class="canvas-stage" id="canvasStage">';
+  html += '<div class="canvas-container u-fill-canvas" id="canvasContainer"><div class="canvas-inner" id="canvasInner"><div class="canvas-stage" id="canvasStage">';
   html += '<svg class="canvas-svg" id="canvasSvg"></svg>';
   adv.nodes.forEach(function(n){
     var sel = n.id === DAL.selectedNodeId ? ' selected' : '';
@@ -59,21 +61,29 @@ DAL.renderStoryGraph = function(proj){
     '</div>';
   });
   if(!adv.nodes.length){
-    html += '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;max-width:380px;color:var(--c-text-faint);font-size:var(--ts-sm)">'+
-      '<div style="margin-bottom:8px;font-size:var(--ts-lg);color:var(--c-text-muted)">Story Graph</div>'+
+    html += '<div class="canvas-empty">'+
+      '<div class="canvas-empty-title">Story Graph</div>'+
       '<p style="line-height:1.6">This is where you build your branching narrative. Each node is a scene the reader experiences. Connect scenes with choices to create paths through your story.</p>'+
       '<p style="margin-top:8px">Click the + button above to create your first scene.</p>'+
     '</div>';
   }
   html += '</div></div></div>';
 
-  // Node detail side panel
+  // Scene editor. One component, two presentations: docked beside the canvas on
+  // a wide screen, a bottom sheet on a phone. All of that is in .tool-panel, so
+  // the markup here carries no layout of its own.
   if(DAL.selectedNodeId){
     var node = adv.nodes.find(function(n){ return n.id === DAL.selectedNodeId; });
     if(node){
-      html += '<div style="position:absolute;top:40px;right:0;width:320px;height:calc(100% - 40px);background:var(--c-surface);border-left:1px solid var(--c-border);overflow-y:auto;padding:16px;box-shadow:var(--shadow-lg);z-index:5" id="nodeDetailPanel">';
+      html += '<div class="tool-panel-scrim" data-action="sg-close-detail" aria-hidden="true"></div>';
+      html += '<aside class="tool-panel" id="nodeDetailPanel" role="dialog" aria-label="Scene editor">';
+      html += '<div class="tool-panel-header">'+
+        '<div class="tool-panel-title">'+(node.title ? DAL.escapeHtml(node.title) : 'Scene Editor')+'</div>'+
+        '<button class="tool-panel-close" data-action="sg-close-detail" title="Close scene editor" aria-label="Close scene editor">&times;</button>'+
+        '</div>';
+      html += '<div class="tool-panel-body">';
       html += DAL.renderNodeDetail(proj, adv, node);
-      html += '</div>';
+      html += '</div></aside>';
     }
   }
 
@@ -81,19 +91,19 @@ DAL.renderStoryGraph = function(proj){
 };
 
 DAL.renderNodeDetail = function(proj, adv, node){
-  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-weight:700;font-size:var(--ts-sm)">Scene Editor</div><button class="btn sm" data-action="sg-close-detail">&times;</button></div>';
-
-  html += '<div class="form-group"><label class="form-label">Scene Title</label><input class="form-input" id="nodeTitle" value="'+DAL.escapeHtml(node.title||'')+'" placeholder="Scene title"></div>';
+  // The panel chrome (title and close button) is supplied by .tool-panel, so
+  // this renders only the fields.
+  var html = '<div class="form-group"><label class="form-label">Scene Title</label><input class="form-input" id="nodeTitle" value="'+DAL.escapeHtml(node.title||'')+'" placeholder="Scene title"></div>';
   html += '<div class="form-group"><label class="form-label">What the Reader Sees</label><textarea class="form-textarea" id="nodeText" style="min-height:100px" placeholder="Write the scene text that the reader will experience...">'+DAL.escapeHtml(node.text||'')+'</textarea></div>';
 
   // Scene illustrations
-  html += '<div class="form-group"><label class="form-label">Scene Illustrations</label>'+
-    '<p style="font-size:var(--ts-xs);color:var(--c-text-muted);margin-bottom:4px">Add artwork that shows alongside this scene in the playthrough.</p>';
+  html += '<div class="form-group asset-dropzone" data-drop="asset" data-asset-bind="node:'+node.id+'"><label class="form-label">Scene Illustrations</label>'+
+    '<p style="font-size:var(--ts-xs);color:var(--c-text-muted);margin-bottom:4px">Add artwork that shows alongside this scene in the playthrough, or drag one in from the Assets tool.</p>';
   if(node.images && node.images.length){
     html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">';
     node.images.forEach(function(img, si){
       html += '<div class="scene-ill-thumb">'+
-        '<img src="'+img.dataUrl+'">'+
+        '<img src="'+DAL.imageSrc(proj,img)+'">'+
         '<button class="chapter-ill-remove" data-action="remove-scene-image" data-nid="'+node.id+'" data-img-idx="'+si+'">&times;</button>'+
         '</div>';
     });
@@ -164,6 +174,8 @@ DAL.renderNodeDetail = function(proj, adv, node){
     html += '</div>';
   });
   html += '</div><button class="btn sm" data-action="sg-add-choice" data-nid="'+node.id+'">+ Add Choice</button></div>';
+
+  html += DAL.renderAudioBinding(proj, node, 'node', node.id);
 
   html += '<button class="btn sm danger" style="margin-top:12px" data-action="sg-delete-node" data-nid="'+node.id+'">Delete Scene</button>';
   return html;
@@ -384,7 +396,7 @@ DAL.describeChoiceGate = function(ch, adv){
 /* --- Stats & Traits --- */
 DAL.renderStatsTraits = function(proj){
   var adv = DAL.ensureAdventure(proj);
-  var html = '<div style="max-width:800px">';
+  var html = '<div class="u-measure-mid">';
 
   html += '<p style="color:var(--c-text-muted);font-size:var(--ts-sm);margin-bottom:16px;line-height:1.6">Stats are numbers that track things like Health, Gold, or Strength. Traits are yes/no flags like \"Knows Lockpicking\" or \"Has Met the King.\" Both are used to control which choices appear for the reader.</p>';
 
@@ -521,7 +533,7 @@ DAL.FAILURE_OPS = [
 /* --- Inventory & Items --- */
 DAL.renderItems = function(proj){
   var adv = DAL.ensureAdventure(proj);
-  var html = '<div style="max-width:900px">';
+  var html = '<div class="u-measure-wide">';
   html += '<p style="color:var(--c-text-muted);font-size:var(--ts-sm);margin-bottom:16px;line-height:1.6">Define the items readers can find during your story — keys, weapons, potions, treasure. Upload illustrations to show what each item looks like. Items can be checked in conditions to control which choices appear.</p>';
   html += '<div class="section-header"><div class="section-title">Items</div><button class="btn primary" data-action="sg-add-item">+ Add Item</button></div>';
   html += '<div class="card"><table class="stats-table"><thead><tr><th>Image</th><th>Name</th><th>Description</th><th>Stackable</th><th>Max Stack</th><th>Slot</th><th>Icon</th><th></th></tr></thead><tbody>';
@@ -563,7 +575,7 @@ DAL.renderPlaytest = function(proj){
   var currentNode = DAL.rpg.currentNode(DAL.playtestState, adv);
   if(!currentNode){ DAL.initPlaytest(adv); currentNode = DAL.rpg.currentNode(DAL.playtestState, adv); }
 
-  var html = '<div class="playtest-layout'+(DAL.playtestStyle==='terminal'?' terminal-mode':'')+'" style="height:calc(var(--app-h,100dvh) - var(--topbar-h) - 52px)">';
+  var html = '<div class="playtest-layout u-fill-body'+(DAL.playtestStyle==='terminal'?' terminal-mode':'')+'">';
   // Main passage area
   html += '<div class="playtest-main">';
   html += '<div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">'+
@@ -584,7 +596,7 @@ DAL.renderPlaytest = function(proj){
   // Scene illustrations
   if(currentNode.images && currentNode.images.length){
     currentNode.images.forEach(function(img){
-      html += '<div class="playtest-scene-image"><img src="'+img.dataUrl+'"></div>';
+      html += '<div class="playtest-scene-image"><img src="'+DAL.imageSrc(proj,img)+'"></div>';
     });
   }
   html += '<div class="playtest-passage">'+DAL.escapeHtml(currentNode.text||'')+'</div>';
@@ -786,7 +798,7 @@ DAL.applyEffects = function(effects, adv){
 /* --- RPG Export --- */
 DAL.renderRPGExport = function(proj){
   var adv = DAL.ensureAdventure(proj);
-  var html = '<div style="max-width:700px"><div class="section-header"><div class="section-title">Export</div></div>';
+  var html = '<div class="u-measure"><div class="section-header"><div class="section-title">Export</div></div>';
   html += '<p class="export-intro">Save this adventure in a format others can play, or take the whole project with you.</p>';
   // Same registry the Export Project dialog uses, so the formats and wording match.
   html += DAL.renderExportGroups(proj);
@@ -806,8 +818,72 @@ DAL.exportedGameUI = function(){
   var state = RPG.newState(DATA);
   var past = [];
 
+  /* Art and audio arrive as data URLs in DATA.assets, keyed by asset id. The app
+     stores bytes in IndexedDB behind blob: URLs, and those do not survive leaving
+     the origin that created them, so the export carries the bytes themselves. */
+  var media = DATA.assets || {};
+  var sound = { on: true, ambient: null, ambientId: null, voice: null };
+  var presented = null;
+
   function esc(t){
     return String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function imageSrc(img){
+    if(!img) return '';
+    return img.dataUrl || (img.assetId && media[img.assetId]) || img.src || '';
+  }
+
+  function stopVoice(){
+    if(sound.voice){ try{ sound.voice.pause(); }catch(e){} sound.voice = null; }
+    if(window.speechSynthesis){ try{ window.speechSynthesis.cancel(); }catch(e){} }
+  }
+
+  function stopAmbient(){
+    if(sound.ambient){ try{ sound.ambient.pause(); }catch(e){} }
+    sound.ambient = null; sound.ambientId = null;
+  }
+
+  function narrate(node){
+    if(!DATA.narrate || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
+    var text = node.narration || node.text || '';
+    if(!text) return;
+    var utter = new SpeechSynthesisUtterance(String(text).slice(0, 32000));
+    utter.rate = DATA.ttsRate || 1;
+    utter.pitch = DATA.ttsPitch == null ? 1 : DATA.ttsPitch;
+    utter.volume = DATA.voiceVolume == null ? 1 : DATA.voiceVolume;
+    window.speechSynthesis.speak(utter);
+  }
+
+  /* A bed that carries across scenes keeps playing rather than restarting, so a
+     continuous track is not chopped up by every choice. */
+  function present(node){
+    if(!node) { stopAmbient(); stopVoice(); return; }
+    var audio = node.audio || {};
+    var bed = audio.ambient ? media[audio.ambient] : '';
+    if(!sound.on || !bed){
+      stopAmbient();
+    } else if(sound.ambientId !== audio.ambient){
+      stopAmbient();
+      sound.ambient = new Audio(bed);
+      sound.ambient.loop = true;
+      sound.ambient.volume = DATA.ambientVolume == null ? 0.4 : DATA.ambientVolume;
+      sound.ambientId = audio.ambient;
+      /* Autoplay is refused until the page has been interacted with. The next
+         choice click starts it; that is not an error worth reporting. */
+      sound.ambient.play().catch(function(){});
+    }
+    stopVoice();
+    if(!sound.on) return;
+    var clip = audio.voice ? media[audio.voice] : '';
+    if(clip){
+      var el = new Audio(clip);
+      el.volume = DATA.voiceVolume == null ? 1 : DATA.voiceVolume;
+      sound.voice = el;
+      el.play().catch(function(){ sound.voice = null; narrate(node); });
+    } else {
+      narrate(node);
+    }
   }
 
   function panels(){
@@ -857,7 +933,10 @@ DAL.exportedGameUI = function(){
     var html = '<div class="main">';
     if(node){
       html += '<h1>' + esc(node.title || '') + '</h1>';
-      (node.images || []).forEach(function(img){ html += '<img class="scene" src="' + img.dataUrl + '" alt="">'; });
+      (node.images || []).forEach(function(img){
+        var src = imageSrc(img);
+        if(src) html += '<img class="scene" src="' + esc(src) + '" alt="">';
+      });
       html += '<div class="passage">' + esc(node.text || '').replace(/\n/g, '<br>') + '</div>';
     }
     var open = [];
@@ -885,17 +964,32 @@ DAL.exportedGameUI = function(){
         (past.length ? '<button class="mini" data-back="1">Step back</button>' : '') + '</div></div>';
     }
     html += changes();
-    html += '</div><div class="side">' + panels() + '</div>';
+    html += '</div><div class="side">';
+    if(DATA.hasAudio || DATA.narrate){
+      html += '<button class="mini sound" data-sound="1">' + (sound.on ? 'Sound on' : 'Sound off') + '</button>';
+    }
+    html += panels() + '</div>';
     document.getElementById('game').innerHTML = html;
+
+    /* Only present when the scene actually changed: render() also runs after an
+       equip, and restarting narration on every click would be maddening. */
+    var id = node ? node.id : null;
+    if(id !== presented){ presented = id; present(node); }
   }
 
   document.getElementById('game').addEventListener('click', function(e){
     var el = e.target;
     while(el && el !== document.body && !el.hasAttribute('data-choice') && !el.hasAttribute('data-equip') &&
-      !el.hasAttribute('data-restart') && !el.hasAttribute('data-back')) el = el.parentNode;
+      !el.hasAttribute('data-restart') && !el.hasAttribute('data-back') && !el.hasAttribute('data-sound')) el = el.parentNode;
     if(!el || el === document.body) return;
-    if(el.hasAttribute('data-restart')){ state = RPG.newState(DATA); past = []; render(); return; }
-    if(el.hasAttribute('data-back')){ if(past.length) state = past.pop(); render(); return; }
+    if(el.hasAttribute('data-sound')){
+      sound.on = !sound.on;
+      if(!sound.on){ stopAmbient(); stopVoice(); presented = null; render(); }
+      else { presented = null; render(); }
+      return;
+    }
+    if(el.hasAttribute('data-restart')){ state = RPG.newState(DATA); past = []; presented = null; render(); return; }
+    if(el.hasAttribute('data-back')){ if(past.length) state = past.pop(); presented = null; render(); return; }
     past.push(RPG.snapshot(state));
     if(past.length > 60) past.shift();
     var done = el.hasAttribute('data-equip')
@@ -935,6 +1029,7 @@ DAL.exportedGameCSS = function(){
     '.end .title{font-size:20px;margin:4px 0}' +
     '.end .note{font-size:14px;color:#b3adbd}' +
     '.acts{display:flex;gap:8px;margin-top:12px}' +
+    '.mini.sound{width:100%;margin-bottom:10px}' +
     '@media (max-width:640px){body{padding:16px}.side{flex:1 1 100%}.choice{font-size:16px}}';
 };
 
@@ -1111,12 +1206,49 @@ DAL.exportTwee = function(proj){
   return lines.join('\n');
 };
 
+/* Where a new scene should appear on the canvas.
+
+   A fixed spawn point put every new scene at stage coordinates 300,200. On a
+   phone that is off the right-hand edge of the visible area, so tapping + looked
+   like it had done nothing, and on any screen a second scene landed exactly on
+   top of the first. This places the scene in the middle of whatever the author
+   is currently looking at — dividing the scroll offset by the zoom, since the
+   stage is transformed — and walks it diagonally while that spot is occupied. */
+DAL.nodeSpawnPoint = function(proj, adv){
+  var NODE_W = 180, NODE_H = 90;
+  var c = document.getElementById('canvasContainer');
+  var zoom = (DAL.canvasView ? DAL.canvasView(proj).zoom : 1) || 1;
+  var x, y;
+  if(c && c.clientWidth){
+    x = (c.scrollLeft + c.clientWidth / 2) / zoom - NODE_W / 2;
+    y = (c.scrollTop + c.clientHeight / 2) / zoom - NODE_H / 2;
+  } else {
+    x = 300; y = 200;
+  }
+  // Keep the scene inside the stage even when the viewport is centred near an edge.
+  var inner = document.getElementById('canvasInner');
+  var maxX = (inner ? inner.offsetWidth / zoom : 2600) - NODE_W;
+  var maxY = (inner ? inner.offsetHeight / zoom : 1700) - NODE_H;
+  x = Math.max(20, Math.min(Math.round(x), Math.round(maxX)));
+  y = Math.max(20, Math.min(Math.round(y), Math.round(maxY)));
+  // Nudge diagonally until the slot is free, so scenes never stack invisibly.
+  var taken = function(px, py){
+    return (adv.nodes || []).some(function(n){
+      return Math.abs((n.x || 0) - px) < 40 && Math.abs((n.y || 0) - py) < 40;
+    });
+  };
+  var guard = 0;
+  while(taken(x, y) && guard++ < 60){ x += 36; y += 28; }
+  return { x: x, y: y };
+};
+
 /* --- Adventure Click Handler --- */
 DAL.handleAdventureClick = function(action, el, e){
   if(action === 'sg-add-node'){
     var proj = DAL.state.projects[DAL.currentProjectId];
     var adv = DAL.ensureAdventure(proj);
-    var node = { id: DAL.uid('node'), title: 'New Node', text: '', x: 300, y: 200, entryEffects: [], choices: [] };
+    var spawn = DAL.nodeSpawnPoint(proj, adv);
+    var node = { id: DAL.uid('node'), title: 'New Node', text: '', x: spawn.x, y: spawn.y, entryEffects: [], choices: [] };
     adv.nodes.push(node);
     if(!adv.startNodeId) adv.startNodeId = node.id;
     DAL.selectedNodeId = node.id;
@@ -1340,6 +1472,38 @@ DAL.handleAdventureClick = function(action, el, e){
     DAL.saveState(); DAL.render();
     return;
   }
+  if(action === 'sg-add-flag'){
+    var projF = DAL.state.projects[DAL.currentProjectId];
+    var advF = DAL.ensureAdventure(projF);
+    var n = 1;
+    while(DAL.rpg.flagDef(advF, 'flag' + n)) n++;
+    advF.flags.push({ id: DAL.uid('flag'), key: 'flag' + n, label: '', 'default': false });
+    DAL.saveState(); DAL.render();
+    return;
+  }
+  if(action === 'sg-delete-flag'){
+    var projFd = DAL.state.projects[DAL.currentProjectId];
+    var advFd = DAL.ensureAdventure(projFd);
+    var goneF = advFd.flags[parseInt(el.getAttribute('data-idx'))];
+    /* Deleting the declaration leaves the effects and conditions alone: they
+       still work against an undeclared flag, and silently stripping an
+       author's story logic to tidy a table would be the worse surprise. */
+    var stillUsed = goneF ? DAL.rpg.flagWriters(advFd, goneF.key).length + DAL.rpg.flagReaders(advFd, goneF.key).length : 0;
+    advFd.flags.splice(parseInt(el.getAttribute('data-idx')), 1);
+    if(stillUsed) DAL.toast('Declaration removed. "'+goneF.key+'" is still used in '+stillUsed+' place'+(stillUsed===1?'':'s')+'.', 'info');
+    DAL.saveState(); DAL.render();
+    return;
+  }
+  if(action === 'sg-adopt-flag'){
+    var projFa = DAL.state.projects[DAL.currentProjectId];
+    var advFa = DAL.ensureAdventure(projFa);
+    var keyFa = el.getAttribute('data-key');
+    if(keyFa && !DAL.rpg.flagDef(advFa, keyFa)){
+      advFa.flags.push({ id: DAL.uid('flag'), key: keyFa, label: '', 'default': false });
+      DAL.saveState(); DAL.render();
+    }
+    return;
+  }
   if(action === 'sg-add-trait'){
     var proj15 = DAL.state.projects[DAL.currentProjectId];
     var adv15 = DAL.ensureAdventure(proj15);
@@ -1479,18 +1643,27 @@ DAL.handleAdventureClick = function(action, el, e){
   }
 
   // RPG Export
+  /* Both exports read asset bytes out of IndexedDB before they can be written, so
+     they are asynchronous. The wait is announced, because on a project with a lot
+     of artwork a silent pause reads as a dead button. */
   if(action === 'export-twee'){
     var proj23 = DAL.exportTarget(el);
     if(!proj23) return;
-    DAL.download(DAL.sanitizeFilename(proj23.name)+'.twee', DAL.exportTwee(proj23), 'text/plain');
-    DAL.toast('Twine source downloaded.','success');
+    DAL.toast('Packing artwork and audio\u2026');
+    DAL.exportTwee(proj23).then(function(out){
+      DAL.download(DAL.sanitizeFilename(proj23.name)+'.twee', out.content, 'text/plain');
+      DAL.reportExport(out, 'Twine source downloaded');
+    }).catch(function(err){ DAL.toast('Twine export failed: '+(err && err.message ? err.message : 'unknown error'), 'error'); });
     return;
   }
   if(action === 'export-playable-html'){
     var proj24 = DAL.exportTarget(el);
     if(!proj24) return;
-    DAL.download(DAL.sanitizeFilename(proj24.name)+'-game.html', DAL.exportPlayableHTML(proj24), 'text/html');
-    DAL.toast('Playable adventure HTML downloaded.','success');
+    DAL.toast('Packing artwork and audio\u2026');
+    DAL.exportPlayableHTML(proj24).then(function(out){
+      DAL.download(DAL.sanitizeFilename(proj24.name)+'-game.html', out.content, 'text/html');
+      DAL.reportExport(out, 'Playable adventure HTML downloaded');
+    }).catch(function(err){ DAL.toast('Export failed: '+(err && err.message ? err.message : 'unknown error'), 'error'); });
     return;
   }
   if(action === 'export-node-text'){
@@ -1541,6 +1714,26 @@ document.addEventListener('input', function(e){
     if(field === 'min' || field === 'max') val = val === '' ? '' : (parseFloat(val)||0);
     if(field === 'defaultActive') return; // handled by change
     adv2.stats[idx][field] = val;
+    DAL.saveState();
+    return;
+  }
+  if(el.hasAttribute('data-flag-field')){
+    var projFf = DAL.state.projects[DAL.currentProjectId];
+    var advFf = DAL.ensureAdventure(projFf);
+    var idxF = parseInt(el.getAttribute('data-idx'));
+    var fieldF = el.getAttribute('data-flag-field');
+    var defF = advFf.flags[idxF];
+    if(!defF) return;
+    if(fieldF === 'default') return; // a select, handled on change
+    if(fieldF === 'key'){
+      /* Renaming carries every effect and condition with it so the gates that
+         depended on this flag keep working. */
+      var nextKey = el.value.trim();
+      if(nextKey && nextKey !== defF.key) DAL.rpg.renameFlag(advFf, defF.key, nextKey);
+      else defF.key = nextKey;
+    } else {
+      defF[fieldF] = el.value;
+    }
     DAL.saveState();
     return;
   }
@@ -1703,6 +1896,12 @@ document.addEventListener('change', function(e){
     DAL.saveState(); DAL.render();
     return;
   }
+  if(el.hasAttribute('data-flag-field') && el.getAttribute('data-flag-field') === 'default'){
+    var advFc = DAL.ensureAdventure(DAL.state.projects[DAL.currentProjectId]);
+    var defFc = advFc.flags[parseInt(el.getAttribute('data-idx'))];
+    if(defFc){ defFc['default'] = el.value === 'true'; DAL.saveState(); DAL.render(); }
+    return;
+  }
   if(el.hasAttribute('data-trait-field') && el.getAttribute('data-trait-field') === 'defaultActive'){
     var proj2 = DAL.state.projects[DAL.currentProjectId];
     var adv2 = DAL.ensureAdventure(proj2);
@@ -1728,3 +1927,325 @@ document.addEventListener('change', function(e){
    here, guarded by `||` so whichever file loaded first won — which silently
    broke story-graph dragging, because the build concatenates story-tools first.
    One implementation, no guard. */
+
+/* Adventure robustness additions. These wrap the original views so old saved
+   projects keep their familiar data while newly authored work uses the richer
+   model below. */
+(function(){
+  var oldEnsure = DAL.ensureAdventure;
+  DAL.ensureAdventure = function(proj){
+    var adv = oldEnsure(proj);
+    if(!adv.gearSlots) adv.gearSlots = [
+      { id:'head', label:'Head', allowedTypes:[] }, { id:'body', label:'Body', allowedTypes:[] },
+      { id:'weapon', label:'Weapon', allowedTypes:[] }, { id:'accessory', label:'Accessory', allowedTypes:[] }
+    ];
+    if(!adv.rules) adv.rules = {};
+    if(adv.rules.capacity === undefined) adv.rules.capacity = '';
+    adv.gearSlots.forEach(function(slot, i){
+      if(!slot.id) slot.id = 'slot'+i;
+      if(!slot.label) slot.label = slot.id;
+      if(!slot.allowedTypes) slot.allowedTypes = [];
+    });
+    adv.items.forEach(function(item){
+      if(!item.type) item.type = '';
+      if(item.weight === undefined) item.weight = 0;
+      if(!item.useEffects) item.useEffects = [];
+      if(item.consumable === undefined) item.consumable = false;
+      if(item.slot && item.slot !== 'none' && !DAL.rpg.slotDef(adv, item.slot)) item.slot = 'none';
+    });
+    return adv;
+  };
+
+  DAL.rpgItemTypes = function(adv){
+    var seen = {};
+    (adv.items || []).forEach(function(item){ if((item.type || '').trim()) seen[item.type.trim()] = true; });
+    return Object.keys(seen).sort();
+  };
+  DAL.slotOptions = function(adv, current){
+    var options = [{ value:'none', label:'carried only' }].concat(DAL.rpg.gearSlots(adv).map(function(slot){ return { value:slot.id, label:slot.label }; }));
+    return DAL.rpgOptions(options, current || 'none');
+  };
+
+  var oldGraph = DAL.renderStoryGraph;
+  DAL.renderStoryGraph = function(proj){
+    var html = oldGraph(proj);
+    html = html.replace(/class="canvas-node([^\"]*)" data-action="sg-select" data-nid="([^\"]+)"/g, 'class="canvas-node$1" data-action="sg-select" data-nid="$2" data-sel="rpg-node:$2" data-ctx="rpg-node" data-ctx-id="$2" data-drop="rpg-item rpg-stat asset" data-asset-bind="node:$2"');
+    return html;
+  };
+
+  var oldNodeDetail = DAL.renderNodeDetail;
+  DAL.renderNodeDetail = function(proj, adv, node){
+    var body = oldNodeDetail(proj, adv, node);
+    body = body.replace('placeholder="Scene title"', 'placeholder="Scene title" list="rpgNodeTitles"');
+    body += '<datalist id="rpgNodeTitles">'+(adv.nodes||[]).map(function(n){ return '<option value="'+DAL.escapeHtml(n.title||'')+'"></option>'; }).join('')+'</datalist>';
+    return DAL.panel('rpg-node-'+node.id, 'Scene authoring', body, { defaultOpen:true, className:'rpg-node-panel' });
+  };
+
+  DAL.renderStatsTraits = function(proj){
+    var adv = DAL.ensureAdventure(proj), html = '<div class="u-measure-mid rpg-tools">';
+    var stats = '<p class="rpg-intro">Use stats for measured values and text. Use traits for every yes/no fact; new boolean stats are intentionally unavailable so a choice always has one clear home.</p>';
+    stats += '<div class="section-header"><div class="section-title">Stats</div><button class="btn primary" data-action="sg-add-stat">+ Add Stat</button></div><div class="card rpg-table-wrap"><table class="stats-table"><thead><tr><th>Key</th><th>Label</th><th>Kind</th><th>Default</th><th>Min</th><th>Max</th><th></th></tr></thead><tbody>';
+    (adv.stats||[]).forEach(function(s, i){
+      var numeric = (s.type||'number') === 'number', legacy = s.type === 'boolean';
+      stats += '<tr data-sel="rpg-stat:'+s.key+'" data-ctx="rpg-stat" data-ctx-id="'+s.key+'" data-drag="rpg-stat:'+s.key+'" data-drag-label="'+DAL.escapeHtml(s.label||s.key)+'"><td><input value="'+DAL.escapeHtml(s.key)+'" data-stat-field="key" data-idx="'+i+'"></td><td><input value="'+DAL.escapeHtml(s.label)+'" data-stat-field="label" data-idx="'+i+'"></td><td>'+(legacy ? '<span class="u-hint">legacy yes/no</span> <button class="btn sm" data-action="sg-convert-bool-stat" data-idx="'+i+'">Convert</button>' : '<select data-stat-field="type" data-idx="'+i+'"><option value="number"'+(numeric?' selected':'')+'>number</option><option value="text"'+(!numeric?' selected':'')+'>text</option></select>')+'</td><td><input value="'+DAL.escapeHtml(String(s.default === undefined ? '' : s.default))+'" data-stat-field="default" data-idx="'+i+'"></td><td>'+(numeric?'<input value="'+DAL.escapeHtml(s.min==null?'':String(s.min))+'" data-stat-field="min" data-idx="'+i+'">':'—')+'</td><td>'+(numeric?'<input value="'+DAL.escapeHtml(s.max==null?'':String(s.max))+'" data-stat-field="max" data-idx="'+i+'">':'—')+'</td><td><button class="btn sm danger" data-action="sg-delete-stat" data-idx="'+i+'">×</button></td></tr>';
+    });
+    if(!(adv.stats||[]).length) stats += '<tr><td colspan="7" class="rpg-empty">No stats defined</td></tr>';
+    stats += '</tbody></table></div>';
+    var traits = '<p class="rpg-intro">Traits are the app’s single yes/no system: “met the king”, “knows lockpicking”, or “cursed”.</p><div class="section-header"><div class="section-title">Traits</div><button class="btn primary" data-action="sg-add-trait">+ Add Trait</button></div><div class="card rpg-table-wrap"><table class="stats-table"><thead><tr><th>Key</th><th>Label</th><th>Description</th><th>Default</th><th></th></tr></thead><tbody>';
+    (adv.traits||[]).forEach(function(t, i){ traits += '<tr><td><input value="'+DAL.escapeHtml(t.key)+'" data-trait-field="key" data-idx="'+i+'"></td><td><input value="'+DAL.escapeHtml(t.label)+'" data-trait-field="label" data-idx="'+i+'"></td><td><input value="'+DAL.escapeHtml(t.description||'')+'" data-trait-field="description" data-idx="'+i+'"></td><td><select data-trait-field="defaultActive" data-idx="'+i+'"><option value="true"'+(t.defaultActive?' selected':'')+'>set</option><option value="false"'+(!t.defaultActive?' selected':'')+'>clear</option></select></td><td><button class="btn sm danger" data-action="sg-delete-trait" data-idx="'+i+'">×</button></td></tr>'; });
+    if(!(adv.traits||[]).length) traits += '<tr><td colspan="5" class="rpg-empty">No traits defined</td></tr>';
+    traits += '</tbody></table></div>';
+    html += DAL.panel('rpg-stats', 'Stats and traits', stats + traits, { defaultOpen:true });
+    html += DAL.panel('rpg-flags', 'Flags', DAL.renderFlagTable(adv), { defaultOpen:false, badge:(adv.flags||[]).length || '' });
+    html += DAL.panel('rpg-run-rules', 'Run-ending rules', DAL.renderFailureRules(adv), { defaultOpen:false, badge:(DAL.rpg.rules(adv).failures||[]).length || '' });
+    return html + '</div>';
+  };
+
+  /* Flags are the engine's raw yes/no channel, kept for imported projects and
+     for authors who prefer them to traits. Declaring one here gives it a
+     starting value and a label; a flag typed straight into an effect still
+     works and is offered for adoption so it stops being invisible. */
+  DAL.renderFlagTable = function(adv){
+    var R = DAL.rpg;
+    var html = '<p class="rpg-intro">Traits are the recommended yes/no system. Flags do the same job with less structure \u2014 declare one here to give it a starting value and see everywhere it is used.</p>';
+    html += '<div class="section-header"><div class="section-title">Declared flags</div><button class="btn primary" data-action="sg-add-flag">+ Add Flag</button></div>';
+    html += '<div class="card rpg-table-wrap"><table class="stats-table"><thead><tr><th>Key</th><th>Label</th><th>Starts</th><th>Set</th><th>Checked</th><th></th></tr></thead><tbody>';
+    (adv.flags||[]).forEach(function(f, i){
+      var writers = R.flagWriters(adv, f.key).length, readers = R.flagReaders(adv, f.key).length;
+      html += '<tr><td><input value="'+DAL.escapeHtml(f.key||'')+'" data-flag-field="key" data-idx="'+i+'" placeholder="metTheWizard"></td>'+
+        '<td><input value="'+DAL.escapeHtml(f.label||'')+'" data-flag-field="label" data-idx="'+i+'" placeholder="Met the wizard"></td>'+
+        '<td><select data-flag-field="default" data-idx="'+i+'"><option value="false"'+(f['default']?'':' selected')+'>clear</option><option value="true"'+(f['default']?' selected':'')+'>set</option></select></td>'+
+        '<td>'+(writers ? writers + ' place' + (writers===1?'':'s') : '<span class="u-hint">never set</span>')+'</td>'+
+        '<td>'+(readers ? readers + ' choice' + (readers===1?'':'s') : '<span class="u-hint">unused</span>')+'</td>'+
+        '<td><button class="btn sm danger" data-action="sg-delete-flag" data-idx="'+i+'">\u00d7</button></td></tr>';
+    });
+    if(!(adv.flags||[]).length) html += '<tr><td colspan="6" class="rpg-empty">No flags declared</td></tr>';
+    html += '</tbody></table></div>';
+
+    var loose = R.undeclaredFlags(adv);
+    if(loose.length){
+      html += '<p class="rpg-intro" style="margin-top:12px">Used in the story but not declared \u2014 adopt one to give it a starting value, or check it for a typo.</p><div class="rpg-loose-flags">';
+      loose.forEach(function(k){
+        html += '<span class="rpg-loose-flag">'+DAL.escapeHtml(k)+
+          '<button class="btn sm" data-action="sg-adopt-flag" data-key="'+DAL.escapeHtml(k)+'">Adopt</button></span>';
+      });
+      html += '</div>';
+    }
+    return html;
+  };
+
+  DAL.renderItems = function(proj){
+    var adv = DAL.ensureAdventure(proj), types = DAL.rpgItemTypes(adv), html = '<div class="u-measure-wide rpg-tools">';
+    var gear = '<p class="rpg-intro">Slots are author-defined. A restriction is a comma-separated list of item types; leave it blank to accept any type.</p><div class="rpg-slot-list">';
+    DAL.rpg.gearSlots(adv).forEach(function(slot, i){ gear += '<div class="rpg-slot-card"><input class="form-input" value="'+DAL.escapeHtml(slot.label)+'" data-slot-field="label" data-idx="'+i+'" placeholder="Slot name"><input class="form-input" value="'+DAL.escapeHtml((slot.allowedTypes||[]).join(', '))+'" data-slot-field="allowedTypes" data-idx="'+i+'" list="rpgItemTypes" placeholder="Allowed item types"><div class="rpg-slot-actions"><button class="btn sm" data-action="sg-slot-up" data-idx="'+i+'"'+(i?'':' disabled')+'>↑</button><button class="btn sm" data-action="sg-slot-down" data-idx="'+i+'"'+(i < adv.gearSlots.length-1?'':' disabled')+'>↓</button><button class="btn sm danger" data-action="sg-delete-slot" data-idx="'+i+'">Delete</button></div></div>'; });
+    gear += '</div><button class="btn sm" data-action="sg-add-slot">+ Add Slot</button><datalist id="rpgItemTypes">'+types.map(function(type){ return '<option value="'+DAL.escapeHtml(type)+'"></option>'; }).join('')+'</datalist>';
+    html += DAL.panel('rpg-gear-slots', 'Gear slots', gear, { defaultOpen:true, badge:adv.gearSlots.length });
+    var items = '<div class="section-header"><div class="section-title">Items</div><button class="btn primary" data-action="sg-add-item">+ Add Item</button></div><p class="rpg-intro">Stack limits and capacity are enforced at play time. Consumables spend one item and then run their listed effects.</p><label class="form-label">Carrying capacity <span class="u-hint">Leave blank for unlimited total weight.</span></label><input class="form-input rpg-capacity" value="'+DAL.escapeHtml(String(adv.rules.capacity == null ? '' : adv.rules.capacity))+'" data-adv-capacity placeholder="unlimited" inputmode="decimal"><div class="card rpg-table-wrap"><table class="stats-table"><thead><tr><th>Item</th><th>Type</th><th>Stack</th><th>Weight</th><th>Gear slot</th><th>Use</th><th></th></tr></thead><tbody>';
+    (adv.items||[]).forEach(function(item, i){
+      var use = (item.useEffects||[]);
+      items += '<tr data-sel="rpg-item:'+item.id+'" data-ctx="rpg-item" data-ctx-id="'+item.id+'" data-drag="rpg-item:'+item.id+'" data-drag-label="'+DAL.escapeHtml(item.name||'Untitled item')+'"><td><input value="'+DAL.escapeHtml(item.name||'')+'" data-item-field="name" data-idx="'+i+'" placeholder="Name"><input value="'+DAL.escapeHtml(item.description||'')+'" data-item-field="description" data-idx="'+i+'" placeholder="Description"></td><td><input value="'+DAL.escapeHtml(item.type||'')+'" data-item-field="type" data-idx="'+i+'" list="rpgItemTypes" placeholder="e.g. blade"></td><td><select data-item-field="stackable" data-idx="'+i+'"><option value="false"'+(!item.stackable?' selected':'')+'>single</option><option value="true"'+(item.stackable?' selected':'')+'>stack</option></select><input value="'+DAL.escapeHtml(String(item.maxStack||1))+'" data-item-field="maxStack" data-idx="'+i+'" placeholder="limit"></td><td><input value="'+DAL.escapeHtml(String(item.weight||0))+'" data-item-field="weight" data-idx="'+i+'" inputmode="decimal"></td><td><select data-item-field="slot" data-idx="'+i+'">'+DAL.slotOptions(adv, item.slot)+'</select></td><td><select data-item-field="consumable" data-idx="'+i+'"><option value="false"'+(!item.consumable?' selected':'')+'>not usable</option><option value="true"'+(item.consumable?' selected':'')+'>consumable</option></select>'+(item.consumable?'<button class="btn sm" data-action="item-add-use-effect" data-idx="'+i+'">+ effect</button><span class="u-hint">'+use.length+' effect'+(use.length===1?'':'s')+'</span>':'')+'</td><td><button class="btn sm danger" data-action="sg-delete-item" data-idx="'+i+'">×</button></td></tr>';
+      if(item.consumable && use.length){ items += '<tr><td colspan="7" class="rpg-use-effects">'+use.map(function(eff, ei){ return DAL.renderItemUseEffect(i, ei, eff, adv); }).join('')+'</td></tr>'; }
+    });
+    if(!(adv.items||[]).length) items += '<tr><td colspan="7" class="rpg-empty">No items defined</td></tr>';
+    items += '</tbody></table></div><input type="file" id="itemImageInput" accept="image/*" style="display:none">';
+    html += DAL.panel('rpg-items', 'Inventory and items', items, { defaultOpen:true, badge:(adv.items||[]).length || '' });
+    return html + '</div>';
+  };
+
+  DAL.renderItemUseEffect = function(itemIdx, effectIdx, eff, adv){
+    var attrs = ' data-item-idx="'+itemIdx+'" data-use-eff-idx="'+effectIdx+'"';
+    return '<div class="rpg-use-effect">'+DAL.escapeHtml(DAL.rpg.describeEffect(eff, adv))+' <button class="btn sm danger" data-action="item-delete-use-effect"'+attrs+'>×</button></div>';
+  };
+
+  var oldEffectRow = DAL.renderEffectRow;
+  DAL.EFFECT_OPS.stat.push({ value:'copy', label:'copies from' });
+  DAL.renderEffectRow = function(prefix, idx, eff, adv, nid, choiceIdx){
+    var html = oldEffectRow(prefix, idx, eff, adv, nid, choiceIdx);
+    if((eff.type||'stat') === 'stat' && eff.op === 'copy'){
+      var attrs = ' data-eff-type="'+(prefix.indexOf('choice')===0?'choice':'entry')+'" data-nid="'+(nid||'')+'" data-choice-idx="'+(choiceIdx===undefined?'':choiceIdx)+'" data-idx="'+idx+'"';
+      html = html.replace('</div>', '<select class="form-select" data-eff-field="valueStatKey"'+attrs+'>'+DAL.rpgOptions(DAL.rpgPickLists(adv).stats, eff.valueStatKey, '— source stat —')+'</select></div>');
+    }
+    return html;
+  };
+  var oldConditionRow = DAL.renderConditionRow;
+  DAL.renderConditionRow = function(nid, choiceIdx, condIdx, cond, adv){
+    var html = oldConditionRow(nid, choiceIdx, condIdx, cond, adv);
+    if((cond.type||'stat') === 'stat'){
+      var attrs = ' data-nid="'+nid+'" data-choice-idx="'+choiceIdx+'" data-cond-idx="'+condIdx+'"';
+      var mode = '<select class="form-select" data-cond-field="valueSource"'+attrs+'><option value="literal"'+(cond.valueSource !== 'stat'?' selected':'')+'>number</option><option value="stat"'+(cond.valueSource === 'stat'?' selected':'')+'>another stat</option></select>';
+      var value = cond.valueSource === 'stat' ? '<select class="form-select" data-cond-field="valueStatKey"'+attrs+'>'+DAL.rpgOptions(DAL.rpgPickLists(adv).numStats, cond.valueStatKey, '— compare with —')+'</select>' : '';
+      html = html.replace('</div>', mode+value+'</div>');
+    }
+    return html;
+  };
+
+  var oldPanels = DAL.renderPlaytestPanels;
+  DAL.renderPlaytestPanels = function(adv){
+    var st = DAL.playtestState, node = DAL.rpg.currentNode(st, adv), choices = DAL.rpg.choiceStates(node, st, adv);
+    var html = DAL.panel('rpg-live-state', 'Live state', oldPanels(adv), { defaultOpen:true });
+    var visits = Object.keys(st.visited||{}).map(function(id){ return '<div class="playtest-stat"><span>'+DAL.escapeHtml(DAL.rpg.nodeTitle(adv,id))+'</span><span>×'+DAL.rpg.visitCount(st,id)+'</span></div>'; }).join('') || '<div class="playtest-empty">No scenes visited</div>';
+    var gates = choices.map(function(cs){ return '<div class="rpg-gate '+(cs.ok&&!cs.broken?'open':cs.hidden?'hidden':'locked')+'"><strong>'+DAL.escapeHtml(cs.choice.label||'Continue')+'</strong><span>'+(cs.ok&&!cs.broken?'available':cs.hidden?'hidden: ':'locked: ')+DAL.escapeHtml(cs.broken?'missing destination':cs.unmet.join(cs.logic==='any'?' or ':' and '))+'</span></div>'; }).join('') || '<div class="playtest-empty">No choices</div>';
+    html += DAL.panel('rpg-visited', 'Visited scenes', visits, { defaultOpen:false, badge:Object.keys(st.visited||{}).length || '' });
+    html += DAL.panel('rpg-choice-debug', 'Choice visibility and locks', gates, { defaultOpen:true, badge:choices.length || '' });
+    return html;
+  };
+
+  DAL.CTX = DAL.CTX || {}; DAL.SELECT = DAL.SELECT || {}; DAL.PASTE = DAL.PASTE || {}; DAL.CLIP_LABELS = DAL.CLIP_LABELS || {};
+  DAL.CLIP_LABELS['rpg-node'] = 'Scene'; DAL.CLIP_LABELS['rpg-item'] = 'Item'; DAL.CLIP_LABELS['rpg-stat'] = 'Stat';
+  DAL.CTX['rpg-node'] = function(id){ return [{ heading:'Scene' }, { label:'Copy', action:'rpg-copy-node', data:{ nid:id } }, { label:'Duplicate', action:'rpg-duplicate-node', data:{ nid:id } }, { label:'Connect from selected', action:'rpg-connect-node', data:{ nid:id } }, { divider:true }, { label:'Delete', action:'sg-delete-node', data:{ nid:id }, danger:true }]; };
+  DAL.CTX['rpg-item'] = function(id){ return [{ heading:'Item' }, { label:'Copy', action:'rpg-copy-item', data:{ iid:id } }, { label:'Duplicate', action:'rpg-duplicate-item', data:{ iid:id } }]; };
+  DAL.CTX['rpg-stat'] = function(id){ return [{ heading:'Stat' }, { label:'Copy', action:'rpg-copy-stat', data:{ skey:id } }]; };
+  DAL.SELECT['rpg-node'] = { label:function(id){ var a=DAL.ensureAdventure(DAL.state.projects[DAL.currentProjectId]); return DAL.rpg.nodeTitle(a,id); }, copy:function(id){ var a=DAL.ensureAdventure(DAL.state.projects[DAL.currentProjectId]); return DAL.clone(DAL.rpg.nodeById(a,id)); }, remove:function(id){ DAL.handleAdventureClick('sg-delete-node',{ getAttribute:function(k){ return k==='data-nid'?id:''; } }); } };
+  DAL.SELECT['rpg-item'] = { label:function(id){ var a=DAL.ensureAdventure(DAL.state.projects[DAL.currentProjectId]); return DAL.rpg.itemName(a,id); }, copy:function(id){ var a=DAL.ensureAdventure(DAL.state.projects[DAL.currentProjectId]); return DAL.clone(DAL.rpg.itemDef(a,id)); } };
+  DAL.SELECT['rpg-stat'] = { label:function(id){ return id; }, copy:function(id){ var a=DAL.ensureAdventure(DAL.state.projects[DAL.currentProjectId]); return DAL.clone(DAL.rpg.statDef(a,id)); } };
+  DAL.PASTE['rpg-node'] = function(payload){ var p=DAL.state.projects[DAL.currentProjectId], a=DAL.ensureAdventure(p), n=DAL.clone(payload), xy=DAL.nodeSpawnPoint(p,a); n.id=DAL.uid('node'); n.title=(n.title||'Scene')+' copy'; n.x=xy.x; n.y=xy.y; a.nodes.push(n); DAL.selectedNodeId=n.id; DAL.saveState(); DAL.render(); };
+  DAL.PASTE['rpg-item'] = function(payload){ var a=DAL.ensureAdventure(DAL.state.projects[DAL.currentProjectId]), it=DAL.clone(payload); it.id=DAL.uid('item'); it.name=(it.name||'Item')+' copy'; a.items.push(it); DAL.saveState(); DAL.render(); };
+  DAL.PASTE['rpg-stat'] = function(payload){ var a=DAL.ensureAdventure(DAL.state.projects[DAL.currentProjectId]), s=DAL.clone(payload); s.id=DAL.uid('stat'); s.key=(s.key||'stat')+'_copy'; s.label=(s.label||s.key)+' copy'; a.stats.push(s); DAL.saveState(); DAL.render(); };
+
+  var oldClick = DAL.handleAdventureClick;
+  DAL.handleAdventureClick = function(action, el, e){
+    var proj = DAL.state.projects[DAL.currentProjectId], adv = proj && DAL.ensureAdventure(proj), idx, item;
+    if(action === 'show-integrity' || action === 'sg-checkup'){ DAL.openCheckup(); return; }
+    if(action === 'rpg-copy-node' || action === 'rpg-duplicate-node'){ DAL.clipCopy('rpg-node','Scene',DAL.SELECT['rpg-node'].copy(el.getAttribute('data-nid')),true); if(action==='rpg-duplicate-node') DAL.clipPaste('rpg-node'); return; }
+    if(action === 'rpg-copy-item' || action === 'rpg-duplicate-item'){ DAL.clipCopy('rpg-item','Item',DAL.SELECT['rpg-item'].copy(el.getAttribute('data-iid')),true); if(action==='rpg-duplicate-item') DAL.clipPaste('rpg-item'); return; }
+    if(action === 'rpg-copy-stat'){ DAL.clipCopy('rpg-stat','Stat',DAL.SELECT['rpg-stat'].copy(el.getAttribute('data-skey')),true); return; }
+    if(action === 'rpg-connect-node'){ if(DAL.selectedNodeId && DAL.selectedNodeId !== el.getAttribute('data-nid')){ var from=DAL.rpg.nodeById(adv,DAL.selectedNodeId); from.choices=(from.choices||[]).concat([{ id:DAL.uid('choice'), label:'Continue', targetNodeId:el.getAttribute('data-nid'), conditions:[], effects:[] }]); DAL.saveState(); DAL.render(); } else DAL.toast('Select a source scene first.','info'); return; }
+    if(action === 'sg-add-slot'){ adv.gearSlots.push({ id:DAL.uid('slot'), label:'New slot', allowedTypes:[] }); DAL.saveState(); DAL.render(); return; }
+    if(action === 'sg-delete-slot'){ idx=parseInt(el.getAttribute('data-idx')); var removed=adv.gearSlots[idx]; adv.items.forEach(function(it){ if(it.slot===removed.id) it.slot='none'; }); adv.gearSlots.splice(idx,1); DAL.saveState(); DAL.render(); return; }
+    if(action === 'sg-slot-up' || action === 'sg-slot-down'){ idx=parseInt(el.getAttribute('data-idx')); var to=action==='sg-slot-up'?idx-1:idx+1; if(adv.gearSlots[to]){ var temp=adv.gearSlots[idx]; adv.gearSlots[idx]=adv.gearSlots[to]; adv.gearSlots[to]=temp; DAL.saveState(); DAL.render(); } return; }
+    if(action === 'item-add-use-effect'){ item=adv.items[parseInt(el.getAttribute('data-idx'))]; item.useEffects.push(DAL.effectDefaults('stat')); DAL.saveState(); DAL.render(); return; }
+    if(action === 'item-delete-use-effect'){ item=adv.items[parseInt(el.getAttribute('data-item-idx'))]; item.useEffects.splice(parseInt(el.getAttribute('data-use-eff-idx')),1); DAL.saveState(); DAL.render(); return; }
+    if(action === 'sg-convert-bool-stat'){ idx=parseInt(el.getAttribute('data-idx')); var stat=adv.stats[idx]; if(stat){ var base=stat.key, key=base, n=2; while(DAL.rpg.traitDef(adv,key)) key=base+'_'+n++; adv.traits.push({ id:DAL.uid('trait'), key:key, label:stat.label||key, description:'Converted from a legacy boolean stat.', defaultActive:stat.default===true||stat.default==='true' }); (adv.nodes||[]).forEach(function(node){ (node.choices||[]).forEach(function(ch){ (ch.conditions||[]).forEach(function(c){ if(c.type==='stat'&&c.key===stat.key){ c.type='trait'; c.key=key; c.op=(c.value===false||c.value==='false'||c.op==='=='&&String(c.value)==='false')?'inactive':'active'; delete c.value; } }); (ch.effects||[]).forEach(function(f){ if(f.type==='stat'&&f.key===stat.key){ f.type='trait'; f.key=key; f.op=(f.value===false||f.value==='false')?'remove':'grant'; delete f.value; } }); }); (node.entryEffects||[]).forEach(function(f){ if(f.type==='stat'&&f.key===stat.key){ f.type='trait'; f.key=key; f.op=(f.value===false||f.value==='false')?'remove':'grant'; delete f.value; } }); }); adv.stats.splice(idx,1); DAL.saveState(); DAL.render(); } return; }
+    if(action === 'pt-use'){ DAL.playtestPush(); var used=DAL.rpg.useItem(DAL.playtestState,adv,el.getAttribute('data-item')); if(!used.ok){ DAL.playtestPast.pop(); DAL.toast(used.reason||'That item cannot be used.','warning'); } else { if(used.redirect) DAL.rpg.enter(DAL.playtestState,adv,used.redirect,'Used item'); if(used.ended) DAL.playtestState.ended=used.ended; } DAL.render(); return; }
+    return oldClick(action,el,e);
+  };
+
+  var oldCheckup = DAL.renderCheckup;
+  DAL.renderCheckup = function(adv){
+    var report = DAL.rpg.audit(adv), groups = { problem:[], warning:[], info:[] };
+    (report.issues||[]).forEach(function(issue){ (groups[issue.level] || groups.warning).push(issue); });
+    if(!report.issues.length) return '<p class="rpg-integrity-ok">No integrity issues found.</p>';
+    var html = '<p class="rpg-intro">'+report.problems+' blocking issue'+(report.problems===1?'':'s')+' and '+report.warnings+' warning'+(report.warnings===1?'':'s')+'. Click an issue to open its scene.</p>';
+    ['problem','warning','info'].forEach(function(level){ if(!groups[level].length) return; html += '<div class="checkup-head">'+(level==='problem'?'Blocking':level==='warning'?'Warnings':'Notes')+'</div>'; groups[level].forEach(function(i){ html += '<button class="rpg-integrity-row '+level+'" data-action="checkup-goto" data-nid="'+DAL.escapeHtml(i.nodeId||'')+'"'+(i.nodeId?'':' disabled')+'><span>'+DAL.escapeHtml(i.scope)+'</span><strong>'+DAL.escapeHtml(i.text)+'</strong></button>'; }); });
+    return html;
+  };
+
+  document.addEventListener('input', function(e){
+    var el=e.target, proj=DAL.state.projects[DAL.currentProjectId]; if(!proj) return; var adv=DAL.ensureAdventure(proj), idx;
+    if(el.hasAttribute('data-slot-field')){ idx=parseInt(el.getAttribute('data-idx')); var field=el.getAttribute('data-slot-field'); if(field==='allowedTypes') adv.gearSlots[idx][field]=el.value.split(',').map(function(v){ return v.trim(); }).filter(Boolean); else adv.gearSlots[idx][field]=el.value; DAL.saveState(); return; }
+    if(el.hasAttribute('data-adv-capacity')){ adv.rules.capacity=el.value===''?'':Math.max(0,parseFloat(el.value)||0); DAL.saveState(); return; }
+    if(el.hasAttribute('data-item-field')){ idx=parseInt(el.getAttribute('data-idx')); var f=el.getAttribute('data-item-field'); if(adv.items[idx] && (f==='weight'||f==='maxStack')){ adv.items[idx][f]=f==='weight'?Math.max(0,parseFloat(el.value)||0):Math.max(1,parseInt(el.value)||1); DAL.saveState(); } }
+  });
+  document.addEventListener('change', function(e){
+    var el=e.target, proj=DAL.state.projects[DAL.currentProjectId]; if(!proj) return; var adv=DAL.ensureAdventure(proj), idx;
+    if(el.hasAttribute('data-item-field') && el.getAttribute('data-item-field')==='consumable'){ idx=parseInt(el.getAttribute('data-idx')); adv.items[idx].consumable=el.value==='true'; DAL.saveState(); DAL.render(); }
+    if(el.hasAttribute('data-eff-field') && el.getAttribute('data-eff-field')==='op' && el.value==='copy') DAL.render();
+    if(el.hasAttribute('data-cond-field') && (el.getAttribute('data-cond-field')==='valueSource' || el.getAttribute('data-cond-field')==='valueStatKey')) DAL.render();
+  });
+
+  document.addEventListener('change', function(e){
+    var input=e.target, file=input.files&&input.files[0];
+    if((input.id !== 'sceneImageInput' && input.id !== 'itemImageInput') || !file) return;
+    if(file.size > 2*1024*1024 && !confirm('This image is over 2 MB. It will be stored inside this project and may consume significant browser storage. Continue?')){ input.value=''; return; }
+    var reader=new FileReader();
+    reader.onload=function(){ var proj=DAL.state.projects[DAL.currentProjectId], adv=DAL.ensureAdventure(proj); if(input.id==='sceneImageInput'){ var node=DAL.rpg.nodeById(adv,DAL._uploadSceneNodeId); if(node){ node.images=node.images||[]; node.images.push({ dataUrl:reader.result, name:file.name }); } } else { var item=adv.items[parseInt(DAL._uploadItemIdx)]; if(item) item.imageDataUrl=reader.result; } DAL.saveState(); DAL.render(); };
+    reader.readAsDataURL(file);
+  });
+
+  DAL.DROP = DAL.DROP || {};
+  DAL.DROP['rpg-item'] = function(payload, zone){ var proj=DAL.state.projects[DAL.currentProjectId], adv=DAL.ensureAdventure(proj), node=DAL.rpg.nodeById(adv,zone.getAttribute('data-nid')); if(node){ node.entryEffects=node.entryEffects||[]; node.entryEffects.push({ type:'inventory', op:'give', key:payload.id, value:1 }); DAL.saveState(); DAL.render(); DAL.toast('Item grant added to scene.','success'); } };
+  DAL.DROP['rpg-stat'] = function(payload, zone){ var proj=DAL.state.projects[DAL.currentProjectId], adv=DAL.ensureAdventure(proj), node=DAL.rpg.nodeById(adv,zone.getAttribute('data-nid')); if(node){ node.entryEffects=node.entryEffects||[]; node.entryEffects.push({ type:'stat', op:'add', key:payload.id, value:1 }); DAL.saveState(); DAL.render(); DAL.toast('Stat change added to scene.','success'); } };
+})();
+
+(function(){
+  DAL.renderItemUseEffect = function(itemIdx, effectIdx, eff, adv){
+    var kind=eff.type||'stat', lists=DAL.rpgPickLists(adv), attrs=' data-item-idx="'+itemIdx+'" data-use-eff-idx="'+effectIdx+'"';
+    var keys=kind==='stat'?lists.stats:kind==='trait'?lists.traits:(kind==='inventory'||kind==='equip')?lists.items:kind==='goto'?lists.nodes:[];
+    var keyField=kind==='flag'||kind==='end'?'<input class="form-input" data-item-use-field="key"'+attrs+' value="'+DAL.escapeHtml(eff.key||'')+'" placeholder="'+(kind==='end'?'ending name':'flag name')+'">':'<select class="form-select" data-item-use-field="key"'+attrs+'>'+DAL.rpgOptions(keys,eff.key,'— pick target —')+'</select>';
+    var value='';
+    if(DAL.effNeedsValue(eff)) value='<input class="form-input" data-item-use-field="value"'+attrs+' value="'+DAL.escapeHtml(String(eff.value==null?'':eff.value))+'" placeholder="'+(kind==='inventory'?'quantity':'value')+'">';
+    if(kind==='stat'&&eff.op==='copy') value='<select class="form-select" data-item-use-field="valueStatKey"'+attrs+'>'+DAL.rpgOptions(lists.stats,eff.valueStatKey,'— source stat —')+'</select>';
+    return '<div class="rpg-use-effect"><select class="form-select" data-item-use-field="type"'+attrs+'>'+DAL.rpgOptions(DAL.EFFECT_TYPES,kind)+'</select>'+keyField+'<select class="form-select" data-item-use-field="op"'+attrs+'>'+DAL.rpgOptions(DAL.EFFECT_OPS[kind]||DAL.EFFECT_OPS.stat,eff.op)+'</select>'+value+'<button class="btn sm danger" data-action="item-delete-use-effect"'+attrs+'>×</button></div>';
+  };
+  var priorPanels=DAL.renderPlaytestPanels;
+  DAL.renderPlaytestPanels=function(adv){
+    var html=priorPanels(adv), usable=DAL.rpg.inventoryRows(DAL.playtestState,adv).filter(function(row){ var item=DAL.rpg.itemDef(adv,row.key); return item&&item.consumable; });
+    if(usable.length){ html += DAL.panel('rpg-usable-items','Usable items',usable.map(function(row){ return '<div class="playtest-item"><span>'+DAL.escapeHtml(row.name)+(row.count>1?' ×'+row.count:'')+'</span><button class="btn sm" data-action="pt-use" data-item="'+DAL.escapeHtml(row.key)+'">Use</button></div>'; }).join(''),{defaultOpen:true,badge:usable.length}); }
+    return html;
+  };
+  document.addEventListener('input',function(e){
+    var el=e.target; if(!el.hasAttribute('data-item-use-field')) return;
+    var p=DAL.state.projects[DAL.currentProjectId], a=DAL.ensureAdventure(p), item=a.items[parseInt(el.getAttribute('data-item-idx'))], eff=item&&(item.useEffects||[])[parseInt(el.getAttribute('data-use-eff-idx'))];
+    if(eff){ var f=el.getAttribute('data-item-use-field'); eff[f]=el.value; DAL.saveState(); }
+  });
+  document.addEventListener('change',function(e){
+    var el=e.target; if(!el.hasAttribute('data-item-use-field')) return;
+    var p=DAL.state.projects[DAL.currentProjectId], a=DAL.ensureAdventure(p), item=a.items[parseInt(el.getAttribute('data-item-idx'))], eff=item&&(item.useEffects||[])[parseInt(el.getAttribute('data-use-eff-idx'))];
+    if(!eff) return; var f=el.getAttribute('data-item-use-field');
+    if(f==='type'){ var fresh=DAL.effectDefaults(el.value); Object.keys(eff).forEach(function(k){ delete eff[k]; }); Object.keys(fresh).forEach(function(k){ eff[k]=fresh[k]; }); }
+    else eff[f]=el.value;
+    DAL.saveState(); DAL.render();
+  });
+})();
+
+/* SugarCube can host ordinary browser JavaScript. Rather than approximating a
+   second rule system with macros, this export embeds the same small engine and
+   UI used by the standalone export. Gear definitions, stack limits, clamping,
+   ending rules and visit counts therefore remain exact. */
+(function(){
+
+  /* Both exports need the same payload, and both need asset bytes read out of
+     IndexedDB first, which is why they resolve a promise rather than returning a
+     string. Callers get the file plus a report of anything unreadable, so an
+     export never claims success while quietly shipping a blank picture. */
+  function exportData(proj){
+    var adv = DAL.ensureAdventure(proj);
+    DAL.ensureAssets(proj);
+    return DAL.collectExportAssets(proj).then(function(res){
+      return {
+        data: {
+          name: proj.name, startNodeId: adv.startNodeId, nodes: adv.nodes,
+          stats: adv.stats, traits: adv.traits, items: adv.items,
+          gearSlots: adv.gearSlots, rules: adv.rules,
+          assets: res.assets,
+          hasAudio: DAL.exportHasAudio(proj, adv),
+          narrate: !!proj.audio.ttsEnabled,
+          ttsRate: proj.audio.ttsRate, ttsPitch: proj.audio.ttsPitch,
+          ambientVolume: proj.audio.ambientVolume, voiceVolume: proj.audio.voiceVolume
+        },
+        missing: res.missing,
+        bytes: res.bytes
+      };
+    });
+  }
+
+  DAL.exportPlayableHTML = function(proj){
+    return exportData(proj).then(function(out){
+      var content = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+DAL.escapeHtml(proj.name||'Adventure')+'</title><style>'+DAL.exportedGameCSS()+'</style></head><body><div id="game"></div><script>\nvar DATA='+JSON.stringify(out.data)+';\n'+DAL.rpg.engineSource()+'('+DAL.exportedGameUI.toString()+')();\n<\/script></body></html>';
+      return { content: content, missing: out.missing, bytes: out.bytes };
+    });
+  };
+
+  DAL.exportTwee = function(proj){
+    return exportData(proj).then(function(out){
+      var css = DAL.exportedGameCSS();
+      var content = [':: StoryTitle',proj.name||'Adventure','', ':: StoryData','{"format":"SugarCube","format-version":"2.36.1"}','', ':: StoryStylesheet [stylesheet]',css,'', ':: StoryJavaScript [script]','setup.DAL_DATA='+JSON.stringify(out.data)+';\n'+DAL.rpg.engineSource(),'', ':: Start','<div id="game"></div>','<<script>>','var DATA=setup.DAL_DATA;','('+DAL.exportedGameUI.toString()+')();','<</script>>','', ':: Export Notes [nobr]','This SugarCube export embeds Draft A Lore’s adventure runtime rather than translating rules into a partial macro set. Authored gear slots and restrictions, item stack limits, carrying capacity, stat clamping, consumables, run-ending rules, scene artwork, bound audio, narration and visit counts play exactly as in the app.'].join('\n');
+      return { content: content, missing: out.missing, bytes: out.bytes };
+    });
+  };
+
+  /* One place decides how an export reports itself, so the two download actions
+     cannot drift into describing the same outcome differently. */
+  DAL.reportExport = function(out, label){
+    if(out.missing && out.missing.length){
+      DAL.toast(label + ', but ' + out.missing.length + ' asset' + (out.missing.length === 1 ? '' : 's') +
+        ' could not be read and will be missing: ' + out.missing.join(', '), 'error');
+      return;
+    }
+    DAL.toast(label + (out.bytes ? ' \u2014 ' + DAL.formatBytes(out.bytes) + ' of artwork and audio travelled with it.' : '.'), 'success');
+  };
+
+  var oldRenderExport=DAL.renderRPGExport;
+  DAL.renderRPGExport=function(proj){ var html=oldRenderExport(proj); return html.replace('Save this adventure in a format others can play, or take the whole project with you.','The standalone and SugarCube exports carry the same RPG runtime \u2014 gear slots, stack limits, clamping, run endings and visit counts \u2014 and embed scene artwork, bound audio and narration so the file plays anywhere on its own.'); };
+})();
+

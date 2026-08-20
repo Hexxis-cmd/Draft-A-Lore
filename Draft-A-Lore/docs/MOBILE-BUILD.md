@@ -1,87 +1,94 @@
 # Android build
 
-Draft A Lore packages its locally staged web runtime in an Android application. Build the APK locally; the repository does not generate an APK in a hosted build step.
+Draft A Lore packages its locally staged web runtime in an Android application. Build locally; the repository does not generate Android artifacts in a hosted build step.
 
 ## Requirements
 
-Install:
-
-- Node.js 22 or later and npm 10 or later
 - Python 3
-- JDK 21
-- Android SDK command-line tools, platform tools, API 35 platform files, and build tools 35.0.0
+- JDK 21 — Android Gradle Plugin 8.7.2 requires it, and a newer JRE without a compiler will fail with `does not provide the required capabilities: [JAVA_COMPILER]`
+- Android SDK with the API 35 platform, platform tools, and build tools 35.0.0
 
-Android Gradle Plugin 8.7.2 requires JDK 21. Set the SDK and JDK locations before building:
+Node.js is **not** required. `build-mobile.py` stages the web app into `www/` and mirrors it into `android/app/src/main/assets/public/`, which is the directory Gradle packages — the job `npx cap copy android` would otherwise do.
 
 ```bash
 export JAVA_HOME=/path/to/jdk-21
 export ANDROID_HOME=/path/to/android-sdk
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
-export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
+export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/35.0.0:$PATH"
 ```
 
-If Gradle cannot find the SDK, create `android/local.properties` locally:
+If Gradle cannot find the SDK, create `android/local.properties` locally (it is gitignored):
 
 ```bash
 printf 'sdk.dir=%s\n' "$ANDROID_HOME" > android/local.properties
 ```
 
-## Build a debug APK
+## Signing configuration
 
-From the repository root:
+`android/app/build.gradle` reads `keystore/keystore.properties`:
 
-```bash
-npm install
-npm run build-android-debug
-mkdir -p releases
-cp android/app/build/outputs/apk/debug/app-debug.apk releases/DraftALore.apk
+```properties
+storeFile=../keystore/draft-a-lore-release.p12
+storePassword=…
+keyAlias=draftalore
+keyPassword=…
 ```
 
-`build-android-debug` runs `build-mobile.py`, synchronizes `www/` into the Android project, and runs `assembleDebug`. The staged `www/` directory is generated; do not edit it.
+The release signing config is conditional. With the properties file and keystore present, `assembleRelease` and `bundleRelease` produce signed artifacts with no extra commands. With either missing, the release build still completes — unsigned — so a fork can build without the private key.
 
-The debug APK produced by Gradle is `android/app/build/outputs/apk/debug/app-debug.apk`. The optional copy in `releases/DraftALore.apk` is the file to distribute for direct installation.
+The keystore and its properties file are gitignored (`keystore/*.p12`, `keystore/*.jks`, `keystore/keystore.properties`) and must never be committed or included in a source archive.
 
-Equivalent steps are available when needed:
-
-```bash
-npm run stage-mobile
-npm run sync-android
-(cd android && ./gradlew assembleDebug)
-```
-
-## Install a debug APK
-
-Copy `releases/DraftALore.apk` to the Android device and install it with the device installer. The device may require permission for the app opening the APK to install unknown apps.
-
-With USB debugging enabled:
+To create a fresh key:
 
 ```bash
-adb install -r releases/DraftALore.apk
-```
-
-The debug APK uses the standard debug signing key and is intended for local testing and direct installation.
-
-## Build and sign a release APK
-
-Create and protect a signing key locally:
-
-```bash
-keytool -genkeypair -v -keystore draftalore-release.keystore \
+keytool -genkeypair -v -storetype PKCS12 \
+  -keystore keystore/draft-a-lore-release.p12 \
   -alias draftalore -keyalg RSA -keysize 4096 -validity 10000
 ```
 
-Build, align, sign, and verify the release APK:
+## Build
 
 ```bash
-(cd android && ./gradlew assembleRelease)
-"$ANDROID_HOME/build-tools/35.0.0/zipalign" -p -f 4 \
-  android/app/build/outputs/apk/release/app-release-unsigned.apk \
-  releases/DraftALore-release-aligned.apk
-"$ANDROID_HOME/build-tools/35.0.0/apksigner" sign \
-  --ks draftalore-release.keystore --ks-key-alias draftalore \
-  --out releases/DraftALore-release.apk releases/DraftALore-release-aligned.apk
-"$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose \
-  releases/DraftALore-release.apk
+python3 build-mobile.py
+cd android && ./gradlew assembleRelease --no-daemon   # APK  → app/build/outputs/apk/release/app-release.apk
+cd android && ./gradlew bundleRelease   --no-daemon   # AAB  → app/build/outputs/bundle/release/app-release.aab
 ```
 
-Do not commit the signing key, passwords, `node_modules/`, Gradle caches, Android build directories, `www/`, or locally generated APKs unless a release artifact is intentionally retained.
+Copy the artifacts to the distribution folder:
+
+```bash
+cp android/app/build/outputs/apk/release/app-release.apk releases/DraftALore.apk
+cp android/app/build/outputs/bundle/release/app-release.aab releases/DraftALore.aab
+```
+
+A debug build for quick device testing:
+
+```bash
+python3 build-mobile.py
+cd android && ./gradlew assembleDebug
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+## Verify before shipping
+
+A successful Gradle run is not proof the app is inside the package. Check both the signature and the payload:
+
+```bash
+apksigner verify --print-certs --verbose releases/DraftALore.apk
+
+python3 - <<'PY'
+import zipfile
+z = zipfile.ZipFile('releases/DraftALore.apk')
+html = z.read('assets/public/index.html').decode('utf-8')
+print(len(html), 'characters of app HTML')
+print(len([n for n in z.namelist() if n.startswith('assets/public/icons')]), 'icons')
+PY
+```
+
+`assets/public/index.html` must be present and roughly 1.4 MB. An APK missing it installs and opens an empty WebView. Expect APK Signature Scheme v2 to verify; v1 is not needed at `minSdk` 24.
+
+## Installing the APK directly
+
+Copy `releases/DraftALore.apk` to the device and open it; Android will ask for permission to install from that source. With USB debugging enabled, `adb install -r releases/DraftALore.apk` does the same.
+
+Do not commit the signing key, its passwords, `node_modules/`, Gradle caches, Android build directories, or `www/`.
