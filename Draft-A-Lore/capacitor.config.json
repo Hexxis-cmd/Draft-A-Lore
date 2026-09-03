@@ -1,0 +1,9 @@
+{
+  "appId": "com.draftalore.app",
+  "appName": "Draft A Lore",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false
+  }
+}

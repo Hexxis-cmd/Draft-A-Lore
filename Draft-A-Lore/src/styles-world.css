@@ -1,0 +1,13 @@
+.world-bible{height:100%;overflow:auto;padding:var(--gutter,20px)}
+.bible-welcome{max-width:900px}.bible-welcome .btn{margin-top:8px}
+.bible-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}.bible-head .writer-tool-actions{justify-content:flex-end}
+.bible-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px}.bible-tabs .btn{white-space:nowrap}
+.bible-layout{display:grid;grid-template-columns:minmax(220px,30%) minmax(0,1fr);gap:12px;min-height:460px}
+.bible-list,.bible-editor{border:1px solid var(--c-border);border-radius:var(--radius-lg);background:var(--c-surface);padding:12px;min-width:0}
+.bible-list-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.bible-record{width:100%;display:flex;flex-direction:column;align-items:flex-start;text-align:left;padding:10px;border-radius:var(--radius);border:1px solid transparent}
+.bible-record:hover,.bible-record.is-selected{background:var(--c-accent-soft);border-color:var(--c-brand-edge-strong)}
+.bible-record span{font-size:var(--ts-xs);color:var(--c-text-muted)}
+.bible-editor .tall{min-height:150px}
+@media(max-width:700px){.bible-head{display:block}.bible-head .writer-tool-actions{justify-content:flex-start;margin-top:10px}.bible-layout{grid-template-columns:1fr}.bible-list{max-height:36dvh;overflow:auto}.world-bible{padding:10px}}
+.genre-choices{display:flex;flex-wrap:wrap;gap:7px}.genre-choices legend{width:100%}.genre-choice{display:flex;align-items:center;gap:4px;padding:5px 9px;border:1px solid var(--c-border);border-radius:var(--radius-full);font-size:var(--ts-xs);cursor:pointer}.genre-choice:has(input:checked){border-color:var(--c-accent);background:var(--c-accent-soft)}

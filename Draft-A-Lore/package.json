@@ -1,0 +1,40 @@
+{
+  "name": "draft-a-lore",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline-first writing app for manuscripts, story planning, and branching adventures, with work stored on the user's own device.",
+  "author": "Daymien Vanhorn",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "keywords": [
+    "writing",
+    "manuscript",
+    "novel",
+    "worldbuilding",
+    "interactive-fiction",
+    "branching-narrative",
+    "rpg",
+    "offline-first",
+    "capacitor",
+    "android"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hexxis-cmd/Draft-A-Lore.git"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "build": "python3 build.py",
+    "stage-mobile": "python3 build-mobile.py",
+    "sync-android": "python3 build-mobile.py && npx cap sync android",
+    "build-android-debug": "python3 build-mobile.py && npx cap sync android && cd android && ./gradlew assembleDebug",
+    "build-android-release": "python3 build-mobile.py && npx cap sync android && cd android && ./gradlew assembleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
+  }
+}

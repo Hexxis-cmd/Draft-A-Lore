@@ -1,0 +1,31 @@
+# Normalize line endings for text sources.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.py text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.webmanifest text eol=lf
+*.gradle text eol=lf
+*.properties text eol=lf
+
+# Binary assets: never diffed, never line-ending converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.apk binary
+*.aab binary
+*.jar binary
+*.keystore binary
+*.jks binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+
+# Keep generated build output out of language statistics and diffs.
+releases/DraftALore.html linguist-generated=true

@@ -1,0 +1,27 @@
+# generated / transient
+node_modules/
+dist/
+www/
+android/app/src/main/assets/public/
+android/build/
+android/app/build/
+android/.gradle/
+android/.idea/
+android/local.properties
+android/capacitor-cordova-android-plugins/build/
+.gradle/
+*.keystore
+# The signing key and its passwords never belong in a public repository.
+keystore/*.p12
+keystore/*.jks
+keystore/keystore.properties
+releases/*.aab
+*.jks
+*.p12
+.DS_Store
+__pycache__/
+
+# Private maintainer notes and publishing materials
+docs/*
+!docs/release-notes/
+!docs/release-notes/**
